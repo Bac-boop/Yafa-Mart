@@ -75,7 +75,6 @@
     <div class="topbar-right">
       <span id="dataStatus" class="status-badge status-demo">Loading...</span>
       <button class="btn" id="exportCsv">Export CSV</button>
-      <button class="btn ghost" id="testWa" title="Test WhatsApp Connection">📱 Test WA</button>
       <div style="font-size:13px;color:var(--muted)">Admin WA: <span id="adminWaLabel">-</span></div>
     </div>
   </header>
@@ -94,7 +93,7 @@
         </div>
         <div id="cart-items"></div>
         <div style="margin-top:12px;display:flex;gap:8px">
-          <button class="btn" id="checkoutBtn">Checkout via WhatsApp</button>
+          <button class="btn" id="checkoutBtn">Checkout via Telegram</button>
           <button class="btn ghost" id="clearCart">Kosongkan</button>
         </div>
       </div>
@@ -115,26 +114,20 @@
   </button>
 
   <footer>
-    <div>Katalog Online Yafa Mart - Terhubung dengan Google Sheet via SheetDB</div>
+    <div>Katalog Online Yafa Mart - Terhubung dengan Google Sheet via SheetDB | Pesanan otomatis ke Telegram</div>
   </footer>
 
   <script>
     /***** CONFIG - EDIT THIS *****/
-    const ADMIN_WHATSAPP = '6285816381285'; // Format: 62xxx (Indonesia) tanpa tanda + atau spasi
+    const TELEGRAM_BOT_TOKEN = '8525368868:AAHkKwH5Z_-lt63c0OEad8UqxnJMLsyC5I';
+    const TELEGRAM_CHAT_ID = '-4813442711';
+    const ADMIN_MENTION = '@BacrulUlum'; // Username admin untuk mention
     const SHOP_NAME = 'Yafa Mart';
     const SHEET_API = 'https://sheetdb.io/api/v1/rcorje2n3osn1';
     const PAGE_SIZE = 20;
     /***** END CONFIG *****/
 
-    // Validate WhatsApp number on page load
-    if(!ADMIN_WHATSAPP || ADMIN_WHATSAPP === '') {
-      console.error('⚠️ ADMIN_WHATSAPP belum diset!');
-      alert('PERHATIAN: Nomor WhatsApp admin belum dikonfigurasi!');
-    } else {
-      console.log('✅ WhatsApp admin configured:', ADMIN_WHATSAPP);
-    }
-
-    document.getElementById('adminWaLabel').textContent = ADMIN_WHATSAPP;
+    document.getElementById('adminWaLabel').textContent = 'Telegram: ' + ADMIN_MENTION;
 
     // Helper functions
     function formatRp(n){ 
@@ -489,34 +482,6 @@ Terima kasih sudah berbelanja di *${SHOP_NAME}* 🙏
 
 _Pesanan akan segera kami proses_`;
 
-      // Try to update stock in Google Sheet (if using SheetDB)
-      if(isDataFromSheet && SHEET_API) {
-        try {
-          await updateStockInSheet(cart);
-          console.log('Stok berhasil diupdate di Google Sheet');
-        } catch(e) {
-          console.warn('Gagal update stok di Google Sheet:', e);
-        }
-      }
-
-      // Clear cart
-      saveCart([]);
-      
-      // Open WhatsApp - IMPORTANT: This must happen AFTER stock update
-      const wa = `https://wa.me/${ADMIN_WHATSAPP}?text=${encodeURIComponent(text)}`;
-      console.log('Opening WhatsApp to:', ADMIN_WHATSAPP);
-      console.log('WhatsApp URL:', wa);
-      
-      window.open(wa, '_blank');
-      
-      // Show success message
-      alert('✅ Pesanan berhasil dikirim ke WhatsApp admin!\n\nSilakan cek WhatsApp Anda untuk melanjutkan.');
-      
-      // Reload products to show updated stock
-      setTimeout(() => {
-        loadAllProducts();
-      }, 1000);
-
 
       // Try to update stock in Google Sheet (if using SheetDB)
       if(isDataFromSheet && SHEET_API) {
@@ -601,15 +566,6 @@ _Pesanan akan segera kami proses_`;
       a.download = 'yafa_products_' + new Date().toISOString().split('T')[0] + '.csv'; 
       a.click(); 
       URL.revokeObjectURL(url); 
-    });
-
-    // Test WhatsApp button
-    document.getElementById('testWa').addEventListener('click', ()=>{
-      const testMessage = `Halo, ini adalah test pesan dari website ${SHOP_NAME}. ✅`;
-      const wa = `https://wa.me/${ADMIN_WHATSAPP}?text=${encodeURIComponent(testMessage)}`;
-      console.log('Test WhatsApp URL:', wa);
-      window.open(wa, '_blank');
-      alert('✅ WhatsApp test dibuka!\n\nJika tidak muncul, periksa:\n1. Nomor WA sudah benar (format: 62xxx)\n2. Browser tidak memblokir popup\n3. WhatsApp sudah terinstall');
     });
 
     // Search input handler
