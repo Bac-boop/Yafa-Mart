@@ -69,13 +69,13 @@
       <div class="logo">YM</div>
       <div>
         <div style="font-weight:700">Yafa Mart</div>
-        <div style="font-size:13px;color:var(--muted)">Katalog Online — COD via WhatsApp</div>
+        <div style="font-size:13px;color:var(--muted)">Katalog Online — COD via Telegram</div>
       </div>
     </div>
     <div class="topbar-right">
       <span id="dataStatus" class="status-badge status-demo">Loading...</span>
       <button class="btn" id="exportCsv">Export CSV</button>
-      <div style="font-size:13px;color:var(--muted)">Admin WA: <span id="adminWaLabel">-</span></div>
+      <div style="font-size:13px;color:var(--muted)">Admin: <span id="adminWaLabel">-</span></div>
     </div>
   </header>
 
@@ -118,47 +118,36 @@
   </footer>
 
   <script>
-    /***** CONFIG - EDIT THIS *****/
     const CLOUDFLARE_WORKER_URL = 'https:' + '//yafamart-telegram-api.baculum19.workers.dev';
     const ADMIN_MENTION = '@BacrulUlum';
     const SHOP_NAME = 'Yafa Mart';
-    const SHEET_API = 'https://sheetdb.io/api/v1/rcorje2n3osn1';
+    const SHEET_API = 'https:' + '//sheetdb.io/api/v1/rcorje2n3osn1';
     const PAGE_SIZE = 20;
-    /***** END CONFIG *****/
 
     document.getElementById('adminWaLabel').textContent = 'Telegram: ' + ADMIN_MENTION;
 
-    // Helper functions
     function formatRp(n){ 
       return 'Rp ' + Number(n).toLocaleString('id-ID'); 
     }
     
     function getImageUrl(url, id) {
-      if (!url || url.trim() === '') {
-        return null;
-      }
-      // Handle various URL formats
-      if (url.startsWith('http://') || url.startsWith('https://')) {
-        return url;
-      }
-      // If it's a Google Drive link, convert to direct link
+      if (!url || url.trim() === '') return null;
+      if (url.startsWith('http:' + '//') || url.startsWith('https:' + '//')) return url;
       if (url.includes('drive.google.com')) {
         const fileId = url.match(/\/d\/(.+?)\//) || url.match(/id=(.+?)(&|$)/);
         if (fileId && fileId[1]) {
-          return `https://drive.google.com/uc?export=view&id=${fileId[1]}`;
+          return 'https:' + '//drive.google.com/uc?export=view&id=' + fileId[1];
         }
       }
       return url;
     }
 
-    // State management
     let ALL_PRODUCTS = [];
     let FILTERED_PRODUCTS = [];
     let displayOffset = 0;
     let isDataFromSheet = false;
     const CART_KEY = 'yafa_cart_v1';
 
-    // Storage helpers
     function loadCart(){ 
       try{ 
         return JSON.parse(localStorage.getItem(CART_KEY) || '[]'); 
@@ -173,7 +162,6 @@
       updateFloating(); 
     }
 
-    // Rendering functions
     function setSkeleton(target, count=6){ 
       const container = document.getElementById(target); 
       container.innerHTML=''; 
@@ -196,13 +184,7 @@
       const chunk = FILTERED_PRODUCTS.slice(displayOffset, displayOffset + PAGE_SIZE); 
       
       if (chunk.length === 0 && displayOffset === 0) {
-        container.innerHTML = `
-          <div class="empty-state" style="grid-column:1/-1">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
-            <div style="font-size:16px;font-weight:500;margin-bottom:4px">Produk tidak ditemukan</div>
-            <div>Coba kata kunci lain atau pilih kategori berbeda</div>
-          </div>
-        `;
+        container.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg><div style="font-size:16px;font-weight:500;margin-bottom:4px">Produk tidak ditemukan</div><div>Coba kata kunci lain atau pilih kategori berbeda</div></div>';
         return;
       }
       
@@ -211,38 +193,13 @@
         el.className='card';
         const imageUrl = getImageUrl(p.gambar, p.id);
         const imageHtml = imageUrl 
-          ? `<img loading="lazy" src="${imageUrl}" alt="${p.nama}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-             <div class="img-placeholder" style="display:none">
-               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-               <div style="font-size:12px">Gambar tidak tersedia</div>
-             </div>`
-          : `<div class="img-placeholder">
-               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-               <div style="font-size:12px">Gambar tidak tersedia</div>
-             </div>`;
+          ? '<img loading="lazy" src="' + imageUrl + '" alt="' + p.nama + '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><div class="img-placeholder" style="display:none"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg><div style="font-size:12px">Gambar tidak tersedia</div></div>'
+          : '<div class="img-placeholder"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg><div style="font-size:12px">Gambar tidak tersedia</div></div>';
         
-        el.innerHTML = `
-          <div class="img">${imageHtml}</div>
-          <div style="font-weight:700;font-size:15px">${p.nama}</div>
-          <div style="font-size:13px;color:var(--muted);line-height:1.4">${p.deskripsi || ''}</div>
-          <div class="meta" style="margin-top:auto">
-            <div>
-              <div class="price">${formatRp(p.harga)}</div>
-              <div style="font-size:12px;color:var(--muted)">per ${p.satuan || 'pcs'}</div>
-            </div>
-            ${getStockBadge(p.stok)}
-          </div>
-          <div style="display:flex;gap:8px;margin-top:6px;align-items:center">
-            <input type="number" min="1" max="${p.stok}" value="1" style="width:70px;padding:8px;border-radius:6px;border:1px solid #e5e7eb;font-size:14px" id="qty_${p.id}" ${p.stok === 0 ? 'disabled' : ''} />
-            <button class="btn" data-id="${p.id}" ${p.stok === 0 ? 'disabled' : ''}>
-              ${p.stok === 0 ? 'Habis' : '+ Keranjang'}
-            </button>
-          </div>
-        `; 
+        el.innerHTML = '<div class="img">' + imageHtml + '</div><div style="font-weight:700;font-size:15px">' + p.nama + '</div><div style="font-size:13px;color:var(--muted);line-height:1.4">' + (p.deskripsi || '') + '</div><div class="meta" style="margin-top:auto"><div><div class="price">' + formatRp(p.harga) + '</div><div style="font-size:12px;color:var(--muted)">per ' + (p.satuan || 'pcs') + '</div></div>' + getStockBadge(p.stok) + '</div><div style="display:flex;gap:8px;margin-top:6px;align-items:center"><input type="number" min="1" max="' + p.stok + '" value="1" style="width:70px;padding:8px;border-radius:6px;border:1px solid #e5e7eb;font-size:14px" id="qty_' + p.id + '" ' + (p.stok === 0 ? 'disabled' : '') + ' /><button class="btn" data-id="' + p.id + '" ' + (p.stok === 0 ? 'disabled' : '') + '>' + (p.stok === 0 ? 'Habis' : '+ Keranjang') + '</button></div>'; 
         container.appendChild(el); 
       });
       
-      // Attach event handlers
       document.querySelectorAll('.card .btn[data-id]').forEach(b=>{ 
         if(!b._attached && !b.disabled){ 
           b._attached = true; 
@@ -257,8 +214,6 @@
       
       displayOffset += chunk.length; 
       updateCounts();
-      
-      // Hide load more if at end
       document.getElementById('loadMore').style.display = displayOffset >= FILTERED_PRODUCTS.length ? 'none' : 'block';
     }
 
@@ -307,14 +262,12 @@
          (p.kategori || '').toLowerCase().includes(q))
       ); 
       
-      // Reset display
       displayOffset = 0; 
       const container = document.getElementById('products'); 
       container.innerHTML = ''; 
       renderProductsChunk(); 
     }
 
-    // Cart functions
     function addToCart(id, qty){ 
       const p = ALL_PRODUCTS.find(x=>x.id===id); 
       if(!p) return alert('Produk tidak ditemukan'); 
@@ -339,8 +292,7 @@
       
       saveCart(cart); 
       
-      // Visual feedback
-      const btn = document.querySelector(`button[data-id="${id}"]`);
+      const btn = document.querySelector('button[data-id="' + id + '"]');
       if(btn){
         const original = btn.textContent;
         btn.textContent = '✓ Ditambahkan';
@@ -366,16 +318,7 @@
       cart.forEach(i=>{ 
         const row = document.createElement('div'); 
         row.className = 'cart-item';
-        row.innerHTML = `
-          <div style="flex:1">
-            <div style="font-weight:600;font-size:14px">${i.name}</div>
-            <div style="font-size:13px;color:var(--muted);margin-top:2px">${i.qty} × ${formatRp(i.price)}</div>
-          </div>
-          <div style="text-align:right">
-            <div style="font-weight:700;color:var(--accent)">${formatRp(i.qty * i.price)}</div>
-            <button class="btn ghost" data-id="remove_${i.id}" style="margin-top:4px;padding:4px 8px;font-size:12px">Hapus</button>
-          </div>
-        `; 
+        row.innerHTML = '<div style="flex:1"><div style="font-weight:600;font-size:14px">' + i.name + '</div><div style="font-size:13px;color:var(--muted);margin-top:2px">' + i.qty + ' × ' + formatRp(i.price) + '</div></div><div style="text-align:right"><div style="font-weight:700;color:var(--accent)">' + formatRp(i.qty * i.price) + '</div><button class="btn ghost" data-id="remove_' + i.id + '" style="margin-top:4px;padding:4px 8px;font-size:12px">Hapus</button></div>'; 
         container.appendChild(row); 
       }); 
       
@@ -387,7 +330,7 @@
       ); 
       
       const total = cart.reduce((s,i) => s + i.price * i.qty, 0); 
-      document.getElementById('cart-summary').textContent = `${cart.length} item — ${formatRp(total)}`; 
+      document.getElementById('cart-summary').textContent = cart.length + ' item — ' + formatRp(total); 
     }
 
     function removeFromCart(id){ 
@@ -401,17 +344,15 @@
       } 
     });
 
-    // Checkout
     document.getElementById('checkoutBtn').addEventListener('click', ()=> doCheckout());
     document.getElementById('floatingCart').addEventListener('click', ()=> {
       window.scrollTo({top: 0, behavior: 'smooth'});
     });
 
-async function doCheckout(){ 
+    async function doCheckout(){ 
       const cart = loadCart(); 
       if(cart.length === 0) return alert('Keranjang kosong'); 
       
-      // Collect customer data
       const name = prompt('📝 Nama Lengkap Anda:'); 
       if(!name || name.trim() === '') return alert('Nama harus diisi!'); 
       
@@ -423,83 +364,6 @@ async function doCheckout(){
       
       const note = prompt('📋 Catatan Tambahan (opsional):\n(contoh: warna, ukuran, dll)', ''); 
       
-      // Get current date and time
-      const now = new Date();
-      const tanggal = now.toLocaleDateString('id-ID', { 
-        day: '2-digit', 
-        month: 'long', 
-        year: 'numeric' 
-      });
-      const waktu = now.toLocaleTimeString('id-ID', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      });
-      
-      // Build Telegram message with better formatting
-      let text = `╔═══════════════════════╗
-   🛒 *PESANAN BARU*
-╚═══════════════════════╝
-
-📅 *Tanggal:* ${tanggal}
-⏰ *Waktu:* ${waktu}
-
-👤 *DATA PELANGGAN*
-━━━━━━━━━━━━━━━━━━━━
-• Nama: ${name}
-• No HP: ${phone}
-• Alamat: ${address}
-
-🛍️ *DETAIL PESANAN*
-━━━━━━━━━━━━━━━━━━━━
-`;
-      
-      let no = 1;
-      cart.forEach(i=>{ 
-        text += `${no}. ${i.name}
-   ${i.qty} × ${formatRp(i.price)} = ${formatRp(i.qty * i.price)}
-
-`; 
-        no++;
-      });
-      
-      const subtotal = cart.reduce((s,i) => s + i.qty * i.price, 0);
-      text += `━━━━━━━━━━━━━━━━━━━━
-💰 *TOTAL: ${formatRp(subtotal)}*
-💳 Metode: *COD (Bayar di Tempat)*`;
-      
-      if(note && note.trim() !== '') {
-        text += `
-
-📝 *Catatan:*
-${note}`;
-      }
-      
-      text += `
-
-━━━━━━━━━━━━━━━━━━━━
-Terima kasih sudah berbelanja di *${SHOP_NAME}* 🙏
-
-_Pesanan akan segera kami proses_
-
-cc: ${ADMIN_MENTION}`;
-
-async function doCheckout(){ 
-      const cart = loadCart(); 
-      if(cart.length === 0) return alert('Keranjang kosong'); 
-      
-      // Collect customer data
-      const name = prompt('📝 Nama Lengkap Anda:'); 
-      if(!name || name.trim() === '') return alert('Nama harus diisi!'); 
-      
-      const phone = prompt('📱 Nomor HP/WhatsApp Anda:\n(contoh: 081234567890)'); 
-      if(!phone || phone.trim() === '') return alert('Nomor HP harus diisi!'); 
-      
-      const address = prompt('📍 Alamat Lengkap Pengiriman:\n(Jalan, RT/RW, Kelurahan, Kecamatan, Kota)'); 
-      if(!address || address.trim() === '') return alert('Alamat harus diisi!'); 
-      
-      const note = prompt('📋 Catatan Tambahan (opsional):\n(contoh: warna, ukuran, dll)', ''); 
-      
-      // Get current date and time
       const now = new Date();
       const tanggal = now.toLocaleDateString('id-ID', { 
         day: '2-digit', 
@@ -513,14 +377,15 @@ async function doCheckout(){
       
       const subtotal = cart.reduce((s,i) => s + i.qty * i.price, 0);
       
-      // Show loading state
       const checkoutBtn = document.getElementById('checkoutBtn');
       const originalBtnText = checkoutBtn.textContent;
       checkoutBtn.textContent = '⏳ Mengirim...';
       checkoutBtn.disabled = true;
 
       try {
-        // Send order to Cloudflare Worker
+        console.log('Sending order to Cloudflare Worker...');
+        console.log('Worker URL:', CLOUDFLARE_WORKER_URL);
+        
         const response = await fetch(CLOUDFLARE_WORKER_URL, {
           method: 'POST',
           headers: {
@@ -540,13 +405,21 @@ async function doCheckout(){
           })
         });
 
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Response error:', errorText);
+          throw new Error('HTTP ' + response.status + ': ' + errorText);
+        }
+        
         const result = await response.json();
+        console.log('Response data:', result);
         
         if(!result.success) {
           throw new Error(result.message || 'Gagal mengirim pesanan');
         }
 
-        // Success! Now update stock in Google Sheet
         if(isDataFromSheet && SHEET_API) {
           try {
             await updateStockInSheet(cart);
@@ -555,12 +428,10 @@ async function doCheckout(){
           }
         }
 
-        // Clear cart
         saveCart([]);
         
-        alert('✅ Pesanan berhasil dikirim ke Telegram!\n\nTerima kasih sudah berbelanja. Admin kami akan segera menghubungi Anda.');
+        alert('✅ Pesanan berhasil dikirim ke Telegram!\n\nTerima kasih sudah berbelanja di ' + SHOP_NAME + '. Admin kami akan segera menghubungi Anda.');
         
-        // Reload products to show updated stock
         setTimeout(() => {
           loadAllProducts();
         }, 1000);
@@ -569,14 +440,12 @@ async function doCheckout(){
         console.error('Error sending order:', error);
         alert('❌ Gagal mengirim pesanan.\n\nSilakan coba lagi atau hubungi admin kami di ' + ADMIN_MENTION + '\n\nError: ' + error.message);
       } finally {
-        // Reset button state
         checkoutBtn.textContent = originalBtnText;
         checkoutBtn.disabled = false;
       }
     }
 
     async function updateStockInSheet(cart) {
-      // Update stock for each item in cart via SheetDB API
       for(const item of cart) {
         const product = ALL_PRODUCTS.find(p => p.id === item.id);
         if(!product) continue;
@@ -584,8 +453,7 @@ async function doCheckout(){
         const newStock = Math.max(0, product.stok - item.qty);
         
         try {
-          // SheetDB: Update by searching for id column
-          const updateUrl = `${SHEET_API}/id/${item.id}`;
+          const updateUrl = SHEET_API + '/id/' + item.id;
           const response = await fetch(updateUrl, {
             method: 'PATCH',
             headers: {
@@ -600,7 +468,6 @@ async function doCheckout(){
             throw new Error('Update failed for product ' + item.id);
           }
           
-          // Update local product data
           product.stok = newStock;
         } catch(e) {
           console.error('Error updating stock for', item.id, e);
@@ -609,7 +476,6 @@ async function doCheckout(){
       }
     }
 
-    // Floating cart
     function updateFloating(){ 
       const cart = loadCart(); 
       const cnt = cart.reduce((s,i)=>s+i.qty, 0); 
@@ -617,7 +483,6 @@ async function doCheckout(){
       document.getElementById('floatingCart').style.display = cnt ? 'inline-block' : 'none'; 
     }
 
-    // Export CSV
     document.getElementById('exportCsv').addEventListener('click', ()=>{ 
       const header = ['id','nama','harga','satuan','stok','gambar','kategori','deskripsi']; 
       const rows = ALL_PRODUCTS.map(p=> {
@@ -636,15 +501,12 @@ async function doCheckout(){
       URL.revokeObjectURL(url); 
     });
 
-    // Search input handler
     document.getElementById('q').addEventListener('input', ()=> {
       applyFilters();
     });
 
-    // Load more handler
     document.getElementById('loadMore').addEventListener('click', ()=> renderProductsChunk());
 
-    // Main function to load products from Google Sheet
     async function loadAllProducts(){ 
       setSkeleton('products', 8);
       
@@ -661,7 +523,7 @@ async function doCheckout(){
         const response = await fetch(SHEET_API);
         
         if(!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          throw new Error('HTTP error! status: ' + response.status);
         }
         
         const data = await response.json();
@@ -671,9 +533,7 @@ async function doCheckout(){
           throw new Error('No data received from Google Sheet');
         }
 
-        // Normalize data from Google Sheet
         ALL_PRODUCTS = data.map((row, index) => {
-          // Handle different possible column names from your sheet
           return {
             id: String(row.id || row.ID || index + 1),
             nama: row.nama || row.name || 'Produk Tanpa Nama',
@@ -695,7 +555,6 @@ async function doCheckout(){
       } catch(error) {
         console.error('Error loading from Google Sheet:', error);
         
-        // Fallback: show error message
         ALL_PRODUCTS = [];
         isDataFromSheet = false;
         
@@ -709,7 +568,6 @@ async function doCheckout(){
               'Error: ' + error.message);
       }
       
-      // Reset filters and render
       FILTERED_PRODUCTS = [...ALL_PRODUCTS];
       displayOffset = 0;
       
@@ -722,12 +580,10 @@ async function doCheckout(){
       updateFloating();
     }
 
-    // Initialize on page load
     loadAllProducts();
     renderCart();
     updateFloating();
 
   </script>
 </body>
-</html>
-
+  </html>
