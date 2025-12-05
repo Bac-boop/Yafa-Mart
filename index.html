@@ -75,6 +75,7 @@
     <div class="topbar-right">
       <span id="dataStatus" class="status-badge status-demo">Loading...</span>
       <button class="btn" id="exportCsv">Export CSV</button>
+      <button class="btn ghost" id="testWa" title="Test WhatsApp Connection">📱 Test WA</button>
       <div style="font-size:13px;color:var(--muted)">Admin WA: <span id="adminWaLabel">-</span></div>
     </div>
   </header>
@@ -119,11 +120,19 @@
 
   <script>
     /***** CONFIG - EDIT THIS *****/
-    const ADMIN_WHATSAPP = '6285816381285';
+    const ADMIN_WHATSAPP = '6285816381285'; // Format: 62xxx (Indonesia) tanpa tanda + atau spasi
     const SHOP_NAME = 'Yafa Mart';
     const SHEET_API = 'https://sheetdb.io/api/v1/rcorje2n3osn1';
     const PAGE_SIZE = 20;
     /***** END CONFIG *****/
+
+    // Validate WhatsApp number on page load
+    if(!ADMIN_WHATSAPP || ADMIN_WHATSAPP === '') {
+      console.error('⚠️ ADMIN_WHATSAPP belum diset!');
+      alert('PERHATIAN: Nomor WhatsApp admin belum dikonfigurasi!');
+    } else {
+      console.log('✅ WhatsApp admin configured:', ADMIN_WHATSAPP);
+    }
 
     document.getElementById('adminWaLabel').textContent = ADMIN_WHATSAPP;
 
@@ -410,26 +419,104 @@
       const cart = loadCart(); 
       if(cart.length === 0) return alert('Keranjang kosong'); 
       
-      const name = prompt('Nama pembeli (untuk nota):'); 
-      if(!name) return alert('Nama dibutuhkan'); 
+      // Collect customer data
+      const name = prompt('📝 Nama Lengkap Anda:'); 
+      if(!name || name.trim() === '') return alert('Nama harus diisi!'); 
       
-      const address = prompt('Alamat lengkap pengiriman:'); 
-      if(!address) return alert('Alamat dibutuhkan'); 
+      const phone = prompt('📱 Nomor HP/WhatsApp Anda:\n(contoh: 081234567890)'); 
+      if(!phone || phone.trim() === '') return alert('Nomor HP harus diisi!'); 
       
-      const note = prompt('Catatan (opsional):', ''); 
+      const address = prompt('📍 Alamat Lengkap Pengiriman:\n(Jalan, RT/RW, Kelurahan, Kecamatan, Kota)'); 
+      if(!address || address.trim() === '') return alert('Alamat harus diisi!'); 
       
-      // Build WhatsApp message
-      let text = `*Pesanan dari ${SHOP_NAME}*\nNama: ${name}\nAlamat: ${address}\n\n*Detail Pesanan:*\n`;
+      const note = prompt('📋 Catatan Tambahan (opsional):\n(contoh: warna, ukuran, dll)', ''); 
       
+      // Get current date and time
+      const now = new Date();
+      const tanggal = now.toLocaleDateString('id-ID', { 
+        day: '2-digit', 
+        month: 'long', 
+        year: 'numeric' 
+      });
+      const waktu = now.toLocaleTimeString('id-ID', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+      
+      // Build WhatsApp message with better formatting
+      let text = `╔═══════════════════════╗
+   🛒 *PESANAN BARU*
+╚═══════════════════════╝
+
+📅 *Tanggal:* ${tanggal}
+⏰ *Waktu:* ${waktu}
+
+👤 *DATA PELANGGAN*
+━━━━━━━━━━━━━━━━━━━━
+• Nama: ${name}
+• No HP: ${phone}
+• Alamat: ${address}
+
+🛍️ *DETAIL PESANAN*
+━━━━━━━━━━━━━━━━━━━━
+`;
+      
+      let no = 1;
       cart.forEach(i=>{ 
-        text += `- ${i.name} × ${i.qty} = ${formatRp(i.qty * i.price)}\n`; 
+        text += `${no}. ${i.name}
+   ${i.qty} × ${formatRp(i.price)} = ${formatRp(i.qty * i.price)}
+
+`; 
+        no++;
       });
       
       const subtotal = cart.reduce((s,i) => s + i.qty * i.price, 0);
-      text += `\nSubtotal: ${formatRp(subtotal)}\nMetode: COD`;
+      text += `━━━━━━━━━━━━━━━━━━━━
+💰 *TOTAL: ${formatRp(subtotal)}*
+💳 Metode: *COD (Bayar di Tempat)*`;
       
-      if(note) text += `\n\nCatatan: ${note}`;
-      text += `\n\nTerima kasih!`;
+      if(note && note.trim() !== '') {
+        text += `
+
+📝 *Catatan:*
+${note}`;
+      }
+      
+      text += `
+
+━━━━━━━━━━━━━━━━━━━━
+Terima kasih sudah berbelanja di *${SHOP_NAME}* 🙏
+
+_Pesanan akan segera kami proses_`;
+
+      // Try to update stock in Google Sheet (if using SheetDB)
+      if(isDataFromSheet && SHEET_API) {
+        try {
+          await updateStockInSheet(cart);
+          console.log('Stok berhasil diupdate di Google Sheet');
+        } catch(e) {
+          console.warn('Gagal update stok di Google Sheet:', e);
+        }
+      }
+
+      // Clear cart
+      saveCart([]);
+      
+      // Open WhatsApp - IMPORTANT: This must happen AFTER stock update
+      const wa = `https://wa.me/${ADMIN_WHATSAPP}?text=${encodeURIComponent(text)}`;
+      console.log('Opening WhatsApp to:', ADMIN_WHATSAPP);
+      console.log('WhatsApp URL:', wa);
+      
+      window.open(wa, '_blank');
+      
+      // Show success message
+      alert('✅ Pesanan berhasil dikirim ke WhatsApp admin!\n\nSilakan cek WhatsApp Anda untuk melanjutkan.');
+      
+      // Reload products to show updated stock
+      setTimeout(() => {
+        loadAllProducts();
+      }, 1000);
+
 
       // Try to update stock in Google Sheet (if using SheetDB)
       if(isDataFromSheet && SHEET_API) {
@@ -514,6 +601,15 @@
       a.download = 'yafa_products_' + new Date().toISOString().split('T')[0] + '.csv'; 
       a.click(); 
       URL.revokeObjectURL(url); 
+    });
+
+    // Test WhatsApp button
+    document.getElementById('testWa').addEventListener('click', ()=>{
+      const testMessage = `Halo, ini adalah test pesan dari website ${SHOP_NAME}. ✅`;
+      const wa = `https://wa.me/${ADMIN_WHATSAPP}?text=${encodeURIComponent(testMessage)}`;
+      console.log('Test WhatsApp URL:', wa);
+      window.open(wa, '_blank');
+      alert('✅ WhatsApp test dibuka!\n\nJika tidak muncul, periksa:\n1. Nomor WA sudah benar (format: 62xxx)\n2. Browser tidak memblokir popup\n3. WhatsApp sudah terinstall');
     });
 
     // Search input handler
