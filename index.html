@@ -14,6 +14,8 @@
       --text-muted:#6B7280;
       --border:#E5E7EB;
       --shadow:0 2px 8px rgba(91,156,229,0.08);
+      --promo-red:#e11d48;
+      --bundle-orange:#f59e0b;
     }
     *{box-sizing:border-box;margin:0;padding:0}
     body{
@@ -21,7 +23,6 @@
       background:var(--bg);color:var(--text);padding-bottom:90px;
     }
 
-    /* Header Sticky */
     .header{
       position:sticky;top:0;z-index:100;background:var(--card);
       box-shadow:0 2px 12px rgba(0,0,0,0.04);
@@ -64,46 +65,52 @@
       border-radius:10px;min-width:20px;text-align:center;
     }
 
-    /* Store Status Banner */
     .store-status-banner{
-      background: var(--primary);
-      color: white;
-      padding: 10px 16px;
-      text-align: center;
-      font-size: 14px;
-      font-weight: 600;
+      padding:12px 16px;
+      text-align:center;
+      font-size:14px;
+      font-weight:600;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
     }
+    .store-status-banner.open{background:#10b981;color:white}
+    .store-status-banner.closed{background:#ef4444;color:white}
+    .store-status-banner.loading{background:#6b7280;color:white}
 
-    /* Promo / Bundle Badges */
     .badge{
       position:absolute;
-      top:10px;
-      left:10px;
-      background:#FF4444;
+      top:8px;
+      left:8px;
       color:white;
       padding:4px 8px;
       border-radius:6px;
       font-size:11px;
       font-weight:700;
       z-index:10;
+      box-shadow:0 2px 4px rgba(0,0,0,0.2);
     }
-    .badge.bundle{
-      background:#f59e0b;
-    }
+    .badge.promo{background:var(--promo-red)}
+    .badge.bundle{background:var(--bundle-orange)}
 
-    /* Price strike + promo */
+    .price-wrapper{display:flex;flex-direction:column;gap:2px}
     .price-original{
-      text-decoration: line-through;
-      color: var(--text-muted);
-      font-size: 12px;
+      text-decoration:line-through;
+      color:var(--text-muted);
+      font-size:12px;
     }
     .price-promo{
-      color: #e11d48;
-      font-weight: 700;
-      font-size: 16px;
+      color:var(--promo-red);
+      font-weight:700;
+      font-size:16px;
+    }
+    .price-normal{
+      font-size:16px;
+      font-weight:700;
+      color:var(--primary);
     }
 
-    /* Filter Modal */
     .filter-modal{
       position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;
       display:none;align-items:flex-end;
@@ -126,7 +133,6 @@
     .chip.active{background:var(--primary);color:white;border-color:var(--primary)}
     .chip:active{transform:scale(0.95)}
 
-    /* Products */
     .container{padding:14px}
     .products-header{
       display:flex;justify-content:space-between;align-items:center;
@@ -157,7 +163,7 @@
       overflow:hidden;height:34px}
     .product-footer{display:flex;justify-content:space-between;align-items:center}
     .product-price{font-size:16px;font-weight:700;color:var(--primary)}
-    .product-unit{font-size:11px;color:var(--text-muted)}
+    .product-unit{font-size:11px;color:var(--text-muted);margin-top:2px}
     .product-stock{font-size:12px;color:var(--text-muted)}
     .add-btn{
       padding:8px 16px;background:var(--primary);color:white;
@@ -166,13 +172,19 @@
     }
     .add-btn:active{background:var(--primary-dark)}
 
+    .bundle-items{
+      font-size:11px;
+      color:var(--text-muted);
+      margin-bottom:8px;
+      line-height:1.4;
+    }
+
     .load-more{
       display:block;width:100%;padding:12px;margin-top:16px;
       background:white;border:1.5px solid var(--border);border-radius:12px;
       color:var(--text);font-weight:600;cursor:pointer;
     }
 
-    /* Cart Floating */
     .cart-fab{
       position:fixed;bottom:20px;right:20px;z-index:90;
     }
@@ -187,7 +199,6 @@
       border-radius:10px;
     }
 
-    /* Cart Panel */
     .cart-panel{
       position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:150;
       display:none;align-items:flex-end;
@@ -239,7 +250,6 @@
       cursor:pointer;
     }
 
-    /* Modal */
     .modal-backdrop{
       position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;
       display:none;align-items:center;justify-content:center;padding:20px;
@@ -271,12 +281,29 @@
     .modal-product-name{font-size:20px;font-weight:700;margin-bottom:8px}
     .modal-product-desc{font-size:14px;color:var(--text-muted);line-height:1.5;margin-bottom:16px}
     .modal-price-row{
-      display:flex;justify-content:space-between;align-items:center;
       padding:12px 0;border-top:1px solid var(--border);
       border-bottom:1px solid var(--border);margin-bottom:16px;
     }
+    .modal-price-wrapper{display:flex;justify-content:space-between;align-items:flex-start}
     .modal-price{font-size:24px;font-weight:700;color:var(--primary)}
+    .modal-price-original{
+      text-decoration:line-through;
+      color:var(--text-muted);
+      font-size:16px;
+      margin-bottom:4px;
+    }
+    .modal-price-promo{
+      color:var(--promo-red);
+      font-size:28px;
+      font-weight:700;
+    }
     .modal-stock{font-size:14px;color:var(--text-muted)}
+    .modal-promo-info{
+      font-size:13px;
+      color:var(--promo-red);
+      margin-top:8px;
+      font-weight:600;
+    }
     .modal-add-section{display:flex;gap:10px;align-items:center}
     .qty-input{
       width:80px;padding:10px;border:1.5px solid var(--border);
@@ -312,7 +339,6 @@
 </head>
 <body>
   
-  <!-- Header Sticky -->
   <div class="header">
     <div class="brand-section">
       <div class="brand-title">Yafa Mart</div>
@@ -340,12 +366,10 @@
     </div>
   </div>
 
-  <!-- Store Status Banner -->
-  <div id="storeStatusBanner" class="store-status-banner">
-    <span id="storeStatusText">Memuat status...</span>
+  <div id="storeStatusBanner" class="store-status-banner loading">
+    <span id="storeStatusText">Memuat status toko...</span>
   </div>
 
-  <!-- Filter Modal -->
   <div class="filter-modal" id="filterModal">
     <div class="filter-content">
       <div class="filter-header">
@@ -356,7 +380,6 @@
     </div>
   </div>
 
-  <!-- Products -->
   <div class="container">
     <div class="products-header">
       <div class="products-title">Daftar Produk</div>
@@ -366,7 +389,6 @@
     <button class="load-more" id="loadMoreBtn" style="display:none">Muat Lebih Banyak</button>
   </div>
 
-  <!-- Cart FAB -->
   <div class="cart-fab">
     <button class="fab" id="fabCartBtn">
       🛒
@@ -374,7 +396,6 @@
     </button>
   </div>
 
-  <!-- Cart Panel -->
   <div class="cart-panel" id="cartPanel">
     <div class="cart-content">
       <div class="cart-header">
@@ -399,12 +420,10 @@
     </div>
   </div>
 
-  <!-- Product Detail Modal -->
   <div class="modal-backdrop" id="productModal">
     <div class="modal" id="productModalContent"></div>
   </div>
 
-  <!-- Customer Form Modal -->
   <div class="modal-backdrop" id="customerModal">
     <div class="modal" id="customerModalContent"></div>
   </div>
@@ -417,6 +436,7 @@
     const PROFILE_KEY = 'yafa_profile_v1';
 
     let ALL_PRODUCTS = [];
+    let ALL_BUNDLES = [];
     let FILTERED_PRODUCTS = [];
     let displayOffset = 0;
     let selectedCategory = '';
@@ -426,6 +446,36 @@
     function saveCart(c){ localStorage.setItem(CART_KEY, JSON.stringify(c)); renderCart(); updateCartBadges(); }
     function loadProfile(){ try{ return JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); }catch(e){ return null; } }
     function saveProfile(p){ localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); }
+
+    function parseDate(dateStr){
+      if(!dateStr) return null;
+      const parts = dateStr.split(/[-/]/);
+      if(parts.length === 3){
+        return new Date(parts[2], parts[1]-1, parts[0]);
+      }
+      return new Date(dateStr);
+    }
+
+    function isPromoActive(product){
+      if(!product.aktif_diskon || product.aktif_diskon.toString().toUpperCase() !== 'TRUE') return false;
+      if(!product.harga_diskon || product.harga_diskon <= 0) return false;
+      if(!product.promo_mulai || !product.promo_selesai) return false;
+      
+      const now = new Date();
+      now.setHours(0,0,0,0);
+      const start = parseDate(product.promo_mulai);
+      const end = parseDate(product.promo_selesai);
+      
+      if(!start || !end) return false;
+      start.setHours(0,0,0,0);
+      end.setHours(23,59,59,999);
+      
+      return now >= start && now <= end;
+    }
+
+    function getDiscountPercent(harga, harga_diskon){
+      return Math.round(((harga - harga_diskon) / harga) * 100);
+    }
 
     function setSkeleton(){
       const grid = document.getElementById('productsGrid');
@@ -458,7 +508,9 @@
 
     function applyFilters(){
       const q = document.getElementById('searchInput').value.trim().toLowerCase();
-      FILTERED_PRODUCTS = ALL_PRODUCTS.filter(p=>{
+      const allItems = [...ALL_PRODUCTS, ...ALL_BUNDLES];
+      
+      FILTERED_PRODUCTS = allItems.filter(p=>{
         const matchCat = !selectedCategory || p.kategori === selectedCategory;
         const matchQ = !q || p.nama.toLowerCase().includes(q) || (p.deskripsi||'').toLowerCase().includes(q);
         return matchCat && matchQ;
@@ -479,36 +531,51 @@
         card.className = 'product-card';
         const imgHtml = p.gambar ? `<img src="${p.gambar}" alt="${p.nama}">` : '<div style="color:var(--text-muted);font-size:12px">No Image</div>';
         
-        const priceHtml = (p.harga_promo && p.harga_promo !== "" && p.harga_promo > 0)
-          ? `<div class="price-original">${formatRp(p.harga)}</div><div class="price-promo">${formatRp(p.harga_promo)}</div>`
-          : `<div class="product-price">${formatRp(p.harga)}</div>`;
+        let badgeHtml = '';
+        let priceHtml = '';
+        
+        if(p.isBundle){
+          badgeHtml = '<div class="badge bundle">PAKET</div>';
+          priceHtml = `<div class="price-normal">${formatRp(p.harga_bundle)}</div>`;
+        } else {
+          const promoActive = isPromoActive(p);
+          if(promoActive){
+            const percent = getDiscountPercent(p.harga, p.harga_diskon);
+            badgeHtml = `<div class="badge promo">-${percent}%</div>`;
+            priceHtml = `<div class="price-wrapper"><div class="price-original">${formatRp(p.harga)}</div><div class="price-promo">${formatRp(p.harga_diskon)}</div></div>`;
+          } else {
+            priceHtml = `<div class="price-normal">${formatRp(p.harga)}</div>`;
+          }
+        }
+
+        const bundleItemsHtml = p.isBundle && p.bundleItems ? `<div class="bundle-items">Isi: ${p.bundleItems}</div>` : '';
 
         card.innerHTML = `
           <div class="product-image">
-            ${p.promo ? '<div class="badge">Promo</div>' : ''}
-            ${p.bundle ? '<div class="badge bundle">Bundle</div>' : ''}
+            ${badgeHtml}
             ${imgHtml}
           </div>
           <div class="product-info">
             <div class="product-name">${p.nama}</div>
+            ${bundleItemsHtml}
             <div class="product-desc">${p.deskripsi||''}</div>
             <div class="product-footer">
               <div>
                 ${priceHtml}
-                <div class="product-unit">${p.satuan||'pcs'}</div>
+                <div class="product-unit">${p.satuan||'paket'}</div>
               </div>
               <div style="text-align:right">
-                <div class="product-stock">Stok: ${p.stok}</div>
-                <button class="add-btn" data-id="${p.id}">+ Keranjang</button>
+                ${!p.isBundle ? `<div class="product-stock">Stok: ${p.stok}</div>` : ''}
+                <button class="add-btn" data-id="${p.id}" data-bundle="${p.isBundle||false}">+ Keranjang</button>
               </div>
             </div>
           </div>
         `;
-        card.querySelector('.product-image').addEventListener('click', ()=>openProductModal(p.id));
-        card.querySelector('.product-name').addEventListener('click', ()=>openProductModal(p.id));
+        card.querySelector('.product-image').addEventListener('click', ()=>openProductModal(p.id, p.isBundle));
+        card.querySelector('.product-name').addEventListener('click', ()=>openProductModal(p.id, p.isBundle));
         card.querySelector('.add-btn').addEventListener('click', (e)=>{
           e.stopPropagation();
-          addToCart(p.id, 1);
+          addToCart(p.id, 1, p.isBundle);
         });
         grid.appendChild(card);
       });
@@ -517,19 +584,39 @@
       document.getElementById('loadMoreBtn').style.display = displayOffset >= FILTERED_PRODUCTS.length ? 'none' : 'block';
     }
 
-    function addToCart(id, qty){
-      const p = ALL_PRODUCTS.find(x=>x.id===id);
-      if(!p) return alert('Produk tidak ditemukan');
-      if(p.stok === 0) return alert('Stok habis');
-      if(qty > p.stok) return alert('Stok tidak cukup');
+    function addToCart(id, qty, isBundle){
+      const item = isBundle ? ALL_BUNDLES.find(x=>x.id===id) : ALL_PRODUCTS.find(x=>x.id===id);
+      if(!item) return alert('Produk tidak ditemukan');
+      
+      if(!isBundle){
+        if(item.stok === 0) return alert('Stok habis');
+        if(qty > item.stok) return alert('Stok tidak cukup');
+      }
+      
       const cart = loadCart();
-      const item = cart.find(x=>x.id===id);
-      const finalPrice = (p.harga_promo && p.harga_promo > 0) ? p.harga_promo : p.harga;
-      if(item){
-        if(item.qty + qty > p.stok) return alert('Jumlah melebihi stok');
-        item.qty += qty;
+      const cartItem = cart.find(x=>x.id===id && x.isBundle===isBundle);
+      
+      let finalPrice;
+      if(isBundle){
+        finalPrice = item.harga_bundle;
       } else {
-        cart.push({id, name:p.nama, price:finalPrice, qty, unit:p.satuan||'pcs'});
+        const promoActive = isPromoActive(item);
+        finalPrice = promoActive ? item.harga_diskon : item.harga;
+      }
+      
+      if(cartItem){
+        if(!isBundle && cartItem.qty + qty > item.stok) return alert('Jumlah melebihi stok');
+        cartItem.qty += qty;
+      } else {
+        cart.push({
+          id,
+          name: item.nama,
+          price: finalPrice,
+          qty,
+          unit: item.satuan || 'paket',
+          isBundle: isBundle || false,
+          image: item.gambar || ''
+        });
       }
       saveCart(cart);
     }
@@ -545,23 +632,22 @@
       body.innerHTML = '';
       let total = 0;
       cart.forEach(i=>{
-        const p = ALL_PRODUCTS.find(x=>x.id===i.id)||{};
         const item = document.createElement('div');
         item.className = 'cart-item';
-        const imgHtml = p.gambar ? `<img src="${p.gambar}" alt="${i.name}">` : '<div style="font-size:12px;color:var(--text-muted)">No Image</div>';
+        const imgHtml = i.image ? `<img src="${i.image}" alt="${i.name}">` : '<div style="font-size:12px;color:var(--text-muted)">No Image</div>';
         item.innerHTML = `
           <div class="cart-item-img">${imgHtml}</div>
           <div class="cart-item-info">
-            <div class="cart-item-name">${i.name}</div>
+            <div class="cart-item-name">${i.name}${i.isBundle ? ' <span style="font-size:11px;color:#f59e0b">(Paket)</span>' : ''}</div>
             <div class="cart-item-detail">${i.qty} × ${formatRp(i.price)}</div>
           </div>
           <div class="cart-item-right">
             <div class="cart-item-price">${formatRp(i.qty*i.price)}</div>
-            <div class="cart-remove" data-id="${i.id}">Hapus</div>
+            <div class="cart-remove" data-id="${i.id}" data-bundle="${i.isBundle}">Hapus</div>
           </div>
         `;
         item.querySelector('.cart-remove').addEventListener('click', ()=>{
-          const cart = loadCart().filter(x=>x.id!==i.id);
+          const cart = loadCart().filter(x=>!(x.id===i.id && x.isBundle===i.isBundle));
           saveCart(cart);
         });
         body.appendChild(item);
@@ -579,35 +665,65 @@
       document.getElementById('fabCartCount').style.display = count > 0 ? 'inline-block' : 'none';
     }
 
-    function openProductModal(id){
-      const p = ALL_PRODUCTS.find(x=>x.id===id);
-      if(!p) return;
+    function openProductModal(id, isBundle){
+      const item = isBundle ? ALL_BUNDLES.find(x=>x.id===id) : ALL_PRODUCTS.find(x=>x.id===id);
+      if(!item) return;
       const modal = document.getElementById('productModalContent');
-      const imgHtml = p.gambar ? `<img src="${p.gambar}" alt="${p.nama}">` : '<div style="font-size:14px;color:var(--text-muted)">Gambar tidak tersedia</div>';
+      const imgHtml = item.gambar ? `<img src="${item.gambar}" alt="${item.nama}">` : '<div style="font-size:14px;color:var(--text-muted)">Gambar tidak tersedia</div>';
       
-      const priceModalHtml = (p.harga_promo && p.harga_promo !== "" && p.harga_promo > 0)
-        ? `<div class="price-original" style="font-size:14px">${formatRp(p.harga)}</div><div class="price-promo" style="font-size:24px">${formatRp(p.harga_promo)}</div>`
-        : formatRp(p.harga);
+      let badgeHtml = '';
+      let priceHtml = '';
+      let promoInfoHtml = '';
+      let stockHtml = '';
+      let qtyInputHtml = '';
+      
+      if(isBundle){
+        badgeHtml = '<div class="badge bundle">PAKET</div>';
+        priceHtml = `<div class="modal-price">${formatRp(item.harga_bundle)}</div>`;
+        qtyInputHtml = `<input type="number" class="qty-input" id="modalQty" min="1" value="1">`;
+      } else {
+        const promoActive = isPromoActive(item);
+        if(promoActive){
+          const percent = getDiscountPercent(item.harga, item.harga_diskon);
+          badgeHtml = `<div class="badge promo">-${percent}%</div>`;
+          priceHtml = `<div><div class="modal-price-original">${formatRp(item.harga)}</div><div class="modal-price-promo">${formatRp(item.harga_diskon)}</div></div>`;
+          
+          const endDate = parseDate(item.promo_selesai);
+          if(endDate){
+            const options = { day: 'numeric', month: 'long', year: 'numeric' };
+            promoInfoHtml = `<div class="modal-promo-info">⏰ Promo sampai: ${endDate.toLocaleDateString('id-ID', options)}</div>`;
+          }
+        } else {
+          priceHtml = `<div class="modal-price">${formatRp(item.harga)}</div>`;
+        }
+        stockHtml = `<div class="modal-stock">Stok: ${item.stok}</div>`;
+        qtyInputHtml = `<input type="number" class="qty-input" id="modalQty" min="1" max="${item.stok}" value="1">`;
+      }
+
+      const bundleItemsHtml = isBundle && item.bundleItems ? `<div style="background:#fef3c7;padding:12px;border-radius:8px;margin-bottom:16px"><strong>Isi Paket:</strong><br>${item.bundleItems}</div>` : '';
 
       modal.innerHTML = `
         <div class="modal-header">
-          <div class="modal-title">Detail Produk</div>
+          <div class="modal-title">Detail ${isBundle ? 'Paket' : 'Produk'}</div>
           <button class="modal-close" id="closeProductModal">×</button>
         </div>
         <div class="modal-body">
           <div class="modal-image">
-            ${p.promo ? '<div class="badge">Promo</div>' : ''}
-            ${p.bundle ? '<div class="badge bundle">Bundle</div>' : ''}
+            ${badgeHtml}
             ${imgHtml}
           </div>
-          <div class="modal-product-name">${p.nama}</div>
-          <div class="modal-product-desc">${p.deskripsi||'-'}</div>
+          <div class="modal-product-name">${item.nama}</div>
+          ${bundleItemsHtml}
+          <div class="modal-product-desc">${item.deskripsi||'-'}</div>
           <div class="modal-price-row">
-            <div class="modal-price">${priceModalHtml}</div>
-            <div class="modal-stock">Stok: ${p.stok}</div>
+            <div class="modal-price-wrapper">
+              ${priceHtml}
+              ${stockHtml}
+            </div>
           </div>
+          ${promoInfoHtml}
           <div class="modal-add-section">
-            <input type="number" class="qty-input" id="modalQty" min="1" max="${p.stok}" value="1">
+            ${qtyInputHtml}
             <button class="btn-add-cart" id="modalAddBtn">Tambah ke Keranjang</button>
           </div>
         </div>
@@ -615,7 +731,7 @@
       document.getElementById('closeProductModal').addEventListener('click', ()=>closeModal('productModal'));
       document.getElementById('modalAddBtn').addEventListener('click', ()=>{
         const qty = parseInt(document.getElementById('modalQty').value)||1;
-        addToCart(p.id, qty);
+        addToCart(item.id, qty, isBundle);
         closeModal('productModal');
       });
       document.getElementById('productModal').classList.add('show');
@@ -733,42 +849,31 @@
         if(!res.ok) throw new Error('Sheet not found');
         return await res.json();
       } catch(e) {
-        console.warn(`Sheet '${name}' tidak ditemukan, menggunakan data default`);
+        console.warn(`Sheet '${name}' tidak ditemukan`);
         return [];
       }
     }
 
     async function loadAllData(){
       try {
-        // Coba ambil dari 3 sheet terpisah
         const produk = await fetchSheet('produk');
         const bundle = await fetchSheet('bundle');
         const status = await fetchSheet('status');
 
-        // Jika sheet produk ada data
         if(produk && produk.length > 0){
-          produk.forEach(p=>{
-            const b = bundle.find(x=>String(x.id) === String(p.id));
-            if(b){
-              p.bundle = true;
-              p.harga_promo = b.harga_promo || p.harga_promo;
-            }
-          });
-          return { produk, status: status[0] || null };
+          return { produk, bundle: bundle || [], status: status[0] || null };
         }
         
-        // Fallback: ambil dari sheet default (tanpa parameter sheet)
         const res = await fetch(SHEET_API);
         if(!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
-        return { produk: data, status: null };
+        return { produk: data, bundle: [], status: null };
         
       } catch(err) {
         console.error('Error loading data:', err);
-        // Fallback ke sheet default
         const res = await fetch(SHEET_API);
         const data = await res.json();
-        return { produk: data, status: null };
+        return { produk: data, bundle: [], status: null };
       }
     }
 
@@ -777,40 +882,67 @@
       const text = document.getElementById('storeStatusText');
 
       if(!status){
-        banner.style.background = "#9ca3af";
-        text.textContent = "Status toko tidak tersedia";
+        banner.className = 'store-status-banner loading';
+        text.textContent = 'Status toko tidak tersedia';
         return;
       }
 
-      if(status.tutup === "ya"){
-        banner.style.background = "#dc2626";
-        text.textContent = status.pesan_tutup || "Toko sedang tutup";
+      const isClosed = status.status_toko && status.status_toko.toLowerCase() === 'tutup';
+      
+      if(isClosed){
+        banner.className = 'store-status-banner closed';
+        text.textContent = '🔴 ' + (status.catatan || 'Toko sedang tutup');
       } else {
-        banner.style.background = "var(--primary)";
-        text.textContent = status.pesan_buka || "Toko buka - Silakan belanja";
+        banner.className = 'store-status-banner open';
+        text.textContent = '🟢 ' + (status.catatan || 'Toko buka - Silakan belanja');
       }
     }
 
     async function loadProducts(){
       setSkeleton();
       try{
-        const { produk, status } = await loadAllData();
+        const { produk, bundle, status } = await loadAllData();
         
         ALL_PRODUCTS = produk.map((r,i)=>({
           id: String(r.id||r.ID||i+1),
           nama: r.nama||r.name||'Produk',
           harga: Number(r.harga||r.price||0),
+          harga_diskon: r.harga_diskon ? Number(r.harga_diskon) : null,
+          promo_mulai: r.promo_mulai || null,
+          promo_selesai: r.promo_selesai || null,
+          aktif_diskon: r.aktif_diskon || 'FALSE',
           satuan: r.satuan||r.unit||'pcs',
           stok: Number(r.stok||r.stock||0),
           gambar: r.gambar||r.image||r.img||'',
           kategori: r.kategori||r.category||'Lainnya',
           deskripsi: r.deskripsi||r.desc||r.description||'',
-          promo: r.promo === 'ya' || r.promo === true,
-          bundle: r.bundle === true,
-          harga_promo: r.harga_promo ? Number(r.harga_promo) : null
+          isBundle: false
         }));
+
+        ALL_BUNDLES = bundle.map(b=>{
+          const prodIds = (b.produk_ids||'').split(',').map(x=>x.trim());
+          const items = prodIds.map(id=>{
+            const p = ALL_PRODUCTS.find(x=>x.id===id);
+            return p ? p.nama : null;
+          }).filter(Boolean);
+          
+          const firstProduct = ALL_PRODUCTS.find(x=>x.id===prodIds[0]);
+          
+          return {
+            id: String(b.bundle_id),
+            nama: b.bundle_nama || 'Paket Bundle',
+            harga_bundle: Number(b.harga_bundle||0),
+            produk_ids: prodIds,
+            bundleItems: items.join(', '),
+            gambar: firstProduct?.gambar || '',
+            kategori: firstProduct?.kategori || 'Lainnya',
+            deskripsi: `Paket hemat berisi: ${items.join(', ')}`,
+            satuan: 'paket',
+            isBundle: true
+          };
+        });
         
-        FILTERED_PRODUCTS = [...ALL_PRODUCTS];
+        FILTERED_PRODUCTS = [...ALL_PRODUCTS, ...ALL_BUNDLES];
         updateStoreStatusBanner(status);
         renderCategories();
         applyFilters();
@@ -820,7 +952,6 @@
       }
     }
 
-    // Event listeners
     document.getElementById('searchInput').addEventListener('input', ()=>{
       clearTimeout(window.searchTimeout);
       window.searchTimeout = setTimeout(applyFilters, 300);
@@ -846,7 +977,6 @@
     document.getElementById('checkoutBtn').addEventListener('click', doCheckout);
     document.getElementById('loadMoreBtn').addEventListener('click', renderChunk);
 
-    // Close modals on backdrop click
     document.getElementById('filterModal').addEventListener('click', (e)=>{
       if(e.target.classList.contains('filter-modal')) closeModal('filterModal');
     });
@@ -860,7 +990,6 @@
       if(e.target.classList.contains('modal-backdrop')) closeModal('customerModal');
     });
 
-    // Init
     loadProducts();
     renderCart();
     updateCartBadges();
