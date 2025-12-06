@@ -479,7 +479,7 @@
         card.className = 'product-card';
         const imgHtml = p.gambar ? `<img src="${p.gambar}" alt="${p.nama}">` : '<div style="color:var(--text-muted);font-size:12px">No Image</div>';
         
-        const priceHtml = p.harga_promo && p.harga_promo !== ""
+        const priceHtml = (p.harga_promo && p.harga_promo !== "" && p.harga_promo > 0)
           ? `<div class="price-original">${formatRp(p.harga)}</div><div class="price-promo">${formatRp(p.harga_promo)}</div>`
           : `<div class="product-price">${formatRp(p.harga)}</div>`;
 
@@ -524,7 +524,7 @@
       if(qty > p.stok) return alert('Stok tidak cukup');
       const cart = loadCart();
       const item = cart.find(x=>x.id===id);
-      const finalPrice = p.harga_promo && p.harga_promo !== "" ? p.harga_promo : p.harga;
+      const finalPrice = (p.harga_promo && p.harga_promo > 0) ? p.harga_promo : p.harga;
       if(item){
         if(item.qty + qty > p.stok) return alert('Jumlah melebihi stok');
         item.qty += qty;
@@ -585,5 +585,286 @@
       const modal = document.getElementById('productModalContent');
       const imgHtml = p.gambar ? `<img src="${p.gambar}" alt="${p.nama}">` : '<div style="font-size:14px;color:var(--text-muted)">Gambar tidak tersedia</div>';
       
-      const priceModalHtml = p.harga_promo && p.harga_promo !== ""
-        ? `<div class="price-original" style="font-size:14px">${formatRp(p.harga)}</div><div class="price-promo" style="font-size:24px">${formatRp(p.harga_pr
+      const priceModalHtml = (p.harga_promo && p.harga_promo !== "" && p.harga_promo > 0)
+        ? `<div class="price-original" style="font-size:14px">${formatRp(p.harga)}</div><div class="price-promo" style="font-size:24px">${formatRp(p.harga_promo)}</div>`
+        : formatRp(p.harga);
+
+      modal.innerHTML = `
+        <div class="modal-header">
+          <div class="modal-title">Detail Produk</div>
+          <button class="modal-close" id="closeProductModal">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-image">
+            ${p.promo ? '<div class="badge">Promo</div>' : ''}
+            ${p.bundle ? '<div class="badge bundle">Bundle</div>' : ''}
+            ${imgHtml}
+          </div>
+          <div class="modal-product-name">${p.nama}</div>
+          <div class="modal-product-desc">${p.deskripsi||'-'}</div>
+          <div class="modal-price-row">
+            <div class="modal-price">${priceModalHtml}</div>
+            <div class="modal-stock">Stok: ${p.stok}</div>
+          </div>
+          <div class="modal-add-section">
+            <input type="number" class="qty-input" id="modalQty" min="1" max="${p.stok}" value="1">
+            <button class="btn-add-cart" id="modalAddBtn">Tambah ke Keranjang</button>
+          </div>
+        </div>
+      `;
+      document.getElementById('closeProductModal').addEventListener('click', ()=>closeModal('productModal'));
+      document.getElementById('modalAddBtn').addEventListener('click', ()=>{
+        const qty = parseInt(document.getElementById('modalQty').value)||1;
+        addToCart(p.id, qty);
+        closeModal('productModal');
+      });
+      document.getElementById('productModal').classList.add('show');
+    }
+
+    function closeModal(id){
+      document.getElementById(id).classList.remove('show');
+    }
+
+    async function doCheckout(){
+      const cart = loadCart();
+      if(cart.length === 0) return alert('Keranjang kosong');
+      let profile = loadProfile();
+      if(!profile){
+        const ok = await showCustomerForm();
+        if(!ok) return;
+        profile = loadProfile();
+      } else {
+        const use = confirm(`Gunakan data:\nNama: ${profile.name}\nHP: ${profile.phone}\nAlamat: ${profile.address}`);
+        if(!use){
+          const ok = await showCustomerForm();
+          if(!ok) return;
+          profile = loadProfile();
+        }
+      }
+      const note = prompt('Catatan (opsional):') || '';
+      const now = new Date();
+      const payload = {
+        customer: profile,
+        cart,
+        date: now.toLocaleDateString('id-ID', {day:'2-digit',month:'long',year:'numeric'}),
+        time: now.toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'}),
+        total: cart.reduce((s,i)=>s+i.qty*i.price,0),
+        note
+      };
+      
+      const btn = document.getElementById('checkoutBtn');
+      btn.textContent = '⏳ Mengirim...';
+      btn.disabled = true;
+
+      try{
+        const res = await fetch(CLOUDFLARE_WORKER_URL, {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(payload)
+        });
+        if(!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        if(!data.success) throw new Error(data.message||'Gagal');
+        
+        saveCart([]);
+        alert('✅ Pesanan berhasil dikirim!\nTerima kasih sudah berbelanja.');
+        closeModal('cartPanel');
+      }catch(err){
+        console.error(err);
+        alert('❌ Gagal mengirim pesanan: ' + err.message);
+      }finally{
+        btn.textContent = 'Checkout';
+        btn.disabled = false;
+      }
+    }
+
+    function showCustomerForm(){
+      return new Promise(resolve=>{
+        const modal = document.getElementById('customerModalContent');
+        const prev = loadProfile();
+        modal.innerHTML = `
+          <div class="modal-header">
+            <div class="modal-title">Data Pengiriman</div>
+            <button class="modal-close" id="closeCustomerModal">×</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label class="form-label">Nama Lengkap</label>
+              <input type="text" class="form-input" id="custName" value="${prev?.name||''}" placeholder="Nama lengkap">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nomor HP/WhatsApp</label>
+              <input type="tel" class="form-input" id="custPhone" value="${prev?.phone||''}" placeholder="08123456789">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Alamat Lengkap</label>
+              <textarea class="form-input" id="custAddress" rows="3" placeholder="Jalan, RT/RW, Kelurahan, Kecamatan, Kota">${prev?.address||''}</textarea>
+            </div>
+            <div style="display:flex;gap:10px">
+              <button class="btn-clear" id="custCancel" style="flex:1">Batal</button>
+              <button class="btn-checkout" id="custSave" style="flex:1">Simpan & Lanjut</button>
+            </div>
+          </div>
+        `;
+        document.getElementById('closeCustomerModal').addEventListener('click', ()=>{
+          closeModal('customerModal');
+          resolve(false);
+        });
+        document.getElementById('custCancel').addEventListener('click', ()=>{
+          closeModal('customerModal');
+          resolve(false);
+        });
+        document.getElementById('custSave').addEventListener('click', ()=>{
+          const name = document.getElementById('custName').value.trim();
+          const phone = document.getElementById('custPhone').value.trim();
+          const address = document.getElementById('custAddress').value.trim();
+          if(!name||!phone||!address) return alert('Semua data wajib diisi');
+          saveProfile({name,phone,address});
+          closeModal('customerModal');
+          resolve(true);
+        });
+        document.getElementById('customerModal').classList.add('show');
+      });
+    }
+
+    async function fetchSheet(name){
+      try {
+        const res = await fetch(`${SHEET_API}/search?sheet=${name}`);
+        if(!res.ok) throw new Error('Sheet not found');
+        return await res.json();
+      } catch(e) {
+        console.warn(`Sheet '${name}' tidak ditemukan, menggunakan data default`);
+        return [];
+      }
+    }
+
+    async function loadAllData(){
+      try {
+        // Coba ambil dari 3 sheet terpisah
+        const produk = await fetchSheet('produk');
+        const bundle = await fetchSheet('bundle');
+        const status = await fetchSheet('status');
+
+        // Jika sheet produk ada data
+        if(produk && produk.length > 0){
+          produk.forEach(p=>{
+            const b = bundle.find(x=>String(x.id) === String(p.id));
+            if(b){
+              p.bundle = true;
+              p.harga_promo = b.harga_promo || p.harga_promo;
+            }
+          });
+          return { produk, status: status[0] || null };
+        }
+        
+        // Fallback: ambil dari sheet default (tanpa parameter sheet)
+        const res = await fetch(SHEET_API);
+        if(!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        return { produk: data, status: null };
+        
+      } catch(err) {
+        console.error('Error loading data:', err);
+        // Fallback ke sheet default
+        const res = await fetch(SHEET_API);
+        const data = await res.json();
+        return { produk: data, status: null };
+      }
+    }
+
+    function updateStoreStatusBanner(status){
+      const banner = document.getElementById('storeStatusBanner');
+      const text = document.getElementById('storeStatusText');
+
+      if(!status){
+        banner.style.background = "#9ca3af";
+        text.textContent = "Status toko tidak tersedia";
+        return;
+      }
+
+      if(status.tutup === "ya"){
+        banner.style.background = "#dc2626";
+        text.textContent = status.pesan_tutup || "Toko sedang tutup";
+      } else {
+        banner.style.background = "var(--primary)";
+        text.textContent = status.pesan_buka || "Toko buka - Silakan belanja";
+      }
+    }
+
+    async function loadProducts(){
+      setSkeleton();
+      try{
+        const { produk, status } = await loadAllData();
+        
+        ALL_PRODUCTS = produk.map((r,i)=>({
+          id: String(r.id||r.ID||i+1),
+          nama: r.nama||r.name||'Produk',
+          harga: Number(r.harga||r.price||0),
+          satuan: r.satuan||r.unit||'pcs',
+          stok: Number(r.stok||r.stock||0),
+          gambar: r.gambar||r.image||r.img||'',
+          kategori: r.kategori||r.category||'Lainnya',
+          deskripsi: r.deskripsi||r.desc||r.description||'',
+          promo: r.promo === 'ya' || r.promo === true,
+          bundle: r.bundle === true,
+          harga_promo: r.harga_promo ? Number(r.harga_promo) : null
+        }));
+        
+        FILTERED_PRODUCTS = [...ALL_PRODUCTS];
+        updateStoreStatusBanner(status);
+        renderCategories();
+        applyFilters();
+      }catch(err){
+        console.error(err);
+        document.getElementById('productsGrid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">Gagal memuat produk</div>';
+      }
+    }
+
+    // Event listeners
+    document.getElementById('searchInput').addEventListener('input', ()=>{
+      clearTimeout(window.searchTimeout);
+      window.searchTimeout = setTimeout(applyFilters, 300);
+    });
+    document.getElementById('filterBtn').addEventListener('click', ()=>{
+      document.getElementById('filterModal').classList.add('show');
+    });
+    document.getElementById('closeFilter').addEventListener('click', ()=>{
+      document.getElementById('filterModal').classList.remove('show');
+    });
+    document.getElementById('headerCartBtn').addEventListener('click', ()=>{
+      document.getElementById('cartPanel').classList.add('show');
+    });
+    document.getElementById('fabCartBtn').addEventListener('click', ()=>{
+      document.getElementById('cartPanel').classList.add('show');
+    });
+    document.getElementById('closeCartBtn').addEventListener('click', ()=>{
+      document.getElementById('cartPanel').classList.remove('show');
+    });
+    document.getElementById('clearCartBtn').addEventListener('click', ()=>{
+      if(confirm('Kosongkan keranjang?')) saveCart([]);
+    });
+    document.getElementById('checkoutBtn').addEventListener('click', doCheckout);
+    document.getElementById('loadMoreBtn').addEventListener('click', renderChunk);
+
+    // Close modals on backdrop click
+    document.getElementById('filterModal').addEventListener('click', (e)=>{
+      if(e.target.classList.contains('filter-modal')) closeModal('filterModal');
+    });
+    document.getElementById('cartPanel').addEventListener('click', (e)=>{
+      if(e.target.classList.contains('cart-panel')) closeModal('cartPanel');
+    });
+    document.getElementById('productModal').addEventListener('click', (e)=>{
+      if(e.target.classList.contains('modal-backdrop')) closeModal('productModal');
+    });
+    document.getElementById('customerModal').addEventListener('click', (e)=>{
+      if(e.target.classList.contains('modal-backdrop')) closeModal('customerModal');
+    });
+
+    // Init
+    loadProducts();
+    renderCart();
+    updateCartBadges();
+
+  </script>
+</body>
+</html>
