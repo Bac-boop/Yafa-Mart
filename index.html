@@ -845,25 +845,44 @@
 
     async function fetchSheet(name){
       try {
-        const res = await fetch(`${SHEET_API}/search?sheet=${name}`);
-        if(!res.ok) throw new Error('Sheet not found');
-        return await res.json();
+        const url = `${SHEET_API}?sheet=${name}`;
+        console.log('Fetching sheet:', name, 'URL:', url);
+        const res = await fetch(url);
+        if(!res.ok) {
+          console.warn(`Sheet '${name}' response not ok:`, res.status);
+          return [];
+        }
+        const data = await res.json();
+        console.log(`Sheet '${name}' data:`, data);
+        return Array.isArray(data) ? data : [];
       } catch(e) {
-        console.warn(`Sheet '${name}' tidak ditemukan`);
+        console.warn(`Sheet '${name}' error:`, e);
         return [];
       }
     }
 
     async function loadAllData(){
       try {
-        const produk = await fetchSheet('produk');
-        const bundle = await fetchSheet('bundle');
-        const status = await fetchSheet('status');
+        // Coba fetch semua sheet
+        const [produk, bundle, status] = await Promise.all([
+          fetchSheet('produk'),
+          fetchSheet('bundle'),
+          fetchSheet('status')
+        ]);
 
+        console.log('Loaded data:', { produk: produk.length, bundle: bundle.length, status: status.length });
+
+        // Jika sheet produk ada
         if(produk && produk.length > 0){
-          return { produk, bundle: bundle || [], status: status[0] || null };
+          return { 
+            produk, 
+            bundle: bundle || [], 
+            status: (status && status.length > 0) ? status[0] : null 
+          };
         }
         
+        // Fallback ke sheet default
+        console.log('Fallback to default sheet');
         const res = await fetch(SHEET_API);
         if(!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
@@ -871,6 +890,7 @@
         
       } catch(err) {
         console.error('Error loading data:', err);
+        // Final fallback
         const res = await fetch(SHEET_API);
         const data = await res.json();
         return { produk: data, bundle: [], status: null };
@@ -881,20 +901,28 @@
       const banner = document.getElementById('storeStatusBanner');
       const text = document.getElementById('storeStatusText');
 
+      console.log('Update status banner:', status);
+
       if(!status){
         banner.className = 'store-status-banner loading';
         text.textContent = 'Status toko tidak tersedia';
         return;
       }
 
-      const isClosed = status.status_toko && status.status_toko.toLowerCase() === 'tutup';
+      // Cek berbagai kemungkinan nama kolom
+      const statusValue = status.status_toko || status.tutup || status.status || '';
+      const isClosed = statusValue.toLowerCase().includes('tutup') || statusValue.toLowerCase() === 'closed';
+      
+      const catatan = status.catatan || status.pesan_buka || status.pesan_tutup || status.message || '';
+      
+      console.log('Status value:', statusValue, 'Is closed:', isClosed, 'Catatan:', catatan);
       
       if(isClosed){
         banner.className = 'store-status-banner closed';
-        text.textContent = '🔴 ' + (status.catatan || 'Toko sedang tutup');
+        text.textContent = '🔴 ' + (catatan || 'Toko sedang tutup');
       } else {
         banner.className = 'store-status-banner open';
-        text.textContent = '🟢 ' + (status.catatan || 'Toko buka - Silakan belanja');
+        text.textContent = '🟢 ' + (catatan || 'Toko buka - Silakan belanja');
       }
     }
 
@@ -920,27 +948,36 @@
         }));
 
         ALL_BUNDLES = bundle.map(b=>{
-          const prodIds = (b.produk_ids||'').split(',').map(x=>x.trim());
+          console.log('Processing bundle:', b);
+          
+          const prodIds = String(b.produk_ids || b.product_ids || '').split(',').map(x=>x.trim()).filter(Boolean);
+          console.log('Product IDs:', prodIds);
+          
           const items = prodIds.map(id=>{
             const p = ALL_PRODUCTS.find(x=>x.id===id);
             return p ? p.nama : null;
           }).filter(Boolean);
           
+          console.log('Bundle items:', items);
+          
           const firstProduct = ALL_PRODUCTS.find(x=>x.id===prodIds[0]);
           
           return {
-            id: String(b.bundle_id),
-            nama: b.bundle_nama || 'Paket Bundle',
-            harga_bundle: Number(b.harga_bundle||0),
+            id: 'bundle_' + String(b.bundle_id || b.id),
+            nama: b.bundle_nama || b.nama || 'Paket Bundle',
+            harga_bundle: Number(b.harga_bundle||b.harga||0),
             produk_ids: prodIds,
-            bundleItems: items.join(', '),
+            bundleItems: items.length > 0 ? items.join(', ') : 'Paket Hemat',
             gambar: firstProduct?.gambar || '',
-            kategori: firstProduct?.kategori || 'Lainnya',
-            deskripsi: `Paket hemat berisi: ${items.join(', ')}`,
+            kategori: firstProduct?.kategori || 'Bundle',
+            deskripsi: items.length > 0 ? `Paket hemat berisi: ${items.join(', ')}` : 'Paket hemat produk pilihan',
             satuan: 'paket',
             isBundle: true
           };
-        });
+        }).filter(b => b.harga_bundle > 0);
+        
+        console.log('Total bundles:', ALL_BUNDLES.length);
+        console.log('Bundles:', ALL_BUNDLES);
         
         FILTERED_PRODUCTS = [...ALL_PRODUCTS, ...ALL_BUNDLES];
         updateStoreStatusBanner(status);
