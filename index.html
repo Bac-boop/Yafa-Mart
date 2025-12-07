@@ -461,7 +461,7 @@
 
   <script>
     const CLOUDFLARE_WORKER_URL = 'https:' + '//yafamart-telegram-api.baculum19.workers.dev';
-    const SHEET_API = 'https://script.google.com/macros/s/AKfycbxFJJUPOszxHhSQ2H5BwHnadMo8yTM1eFGVCQgucXnhdOsPVRjpH1BQtnaDR6Vh3PTq/exec';
+    const SHEET_API = 'https://script.google.com/macros/s/AKfycbwtF3yVgVdY8ZL1y9HPb_6b7HxfRDfQT2n78OinCyiy9Ievy4AxGnDYznswh-OF6OMP/exec';
     const PAGE_SIZE = 20;
     const CART_KEY = 'yafa_cart_v2';
     const PROFILE_KEY = 'yafa_profile_v2';
@@ -492,10 +492,17 @@
         
         // Convert Google Drive URLs to direct links
         if(url.includes('drive.google.com/file/d/')){
-          const match = url.match(/\/file\/d\/([^\/]+)/);
+          // Match pattern: /file/d/FILE_ID/view or /file/d/FILE_ID
+          const match = url.match(/\/file\/d\/([^\/\?]+)/);
           if(match){
-            return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+            const fileId = match[1];
+            return `https://drive.google.com/uc?export=view&id=${fileId}`;
           }
+        }
+        
+        // Check if it's already a direct link
+        if(url.includes('drive.google.com/uc?')){
+          return url;
         }
         
         // Check if it's a valid URL
@@ -506,7 +513,7 @@
         return null;
       }).filter(Boolean);
     }
-
+    
     // Create Image Carousel HTML
     function createImageCarousel(images, altText){
       if(!images || images.length === 0){
@@ -1538,3 +1545,4 @@
   </script>
 </body>
 </html>
+
