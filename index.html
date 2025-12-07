@@ -472,13 +472,17 @@
     let displayOffset = 0;
     let selectedCategory = '';
 
+    // Format Rupiah
+    function formatRp(num){
+      return 'Rp ' + Number(num).toLocaleString('id-ID');
+    }
+
+    // Parse multiple images from comma-separated string
     function parseImages(imageStr){
       if(!imageStr) return [];
       
-      // Split by comma
       const urls = String(imageStr).split(',').map(url => url.trim()).filter(Boolean);
       
-      // Convert Google Drive URLs to direct links
       return urls.map(url => {
         if(url.includes('drive.google.com/file/d/')){
           const match = url.match(/\/file\/d\/([^\/]+)/);
@@ -489,25 +493,184 @@
         return url;
       });
     }
-    function loadCart(){ try{ return JSON.parse(localStorage.getItem(CART_KEY) || '[]'); }catch(e){ return []; } }
-    function saveCart(c){ localStorage.setItem(CART_KEY, JSON.stringify(c)); renderCart(); updateCartBadges(); }
-    function loadProfile(){ try{ return JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); }catch(e){ return null; } }
-    function saveProfile(p){ localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); }
+
+    // Create Image Carousel HTML
+    function createImageCarousel(images, altText){
+      if(!images || images.length === 0){
+        return '<div style="color:var(--text-muted);font-size:12px">No Image</div>';
+      }
+      
+      if(images.length === 1){
+        return `<img src="${images[0]}" alt="${altText}" style="width:100%;height:100%;object-fit:cover">`;
+      }
+      
+      let html = '<div class="image-carousel" style="width:100%;height:100%;position:relative;overflow:hidden">';
+      html += '<div class="carousel-track" style="display:flex;transition:transform 0.3s ease;height:100%">';
+      
+      images.forEach((img, idx) => {
+        html += `<div class="carousel-slide" style="min-width:100%;height:100%;flex-shrink:0"><img src="${img}" alt="${altText}" style="width:100%;height:100%;object-fit:cover"></div>`;
+      });
+      
+      html += '</div>';
+      
+      if(images.length > 1){
+        html += '<button class="carousel-prev" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.5);color:white;border:none;border-radius:50%;width:36px;height:36px;font-size:20px;cursor:pointer;z-index:10">‹</button>';
+        html += '<button class="carousel-next" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.5);color:white;border:none;border-radius:50%;width:36px;height:36px;font-size:20px;cursor:pointer;z-index:10">›</button>';
+        
+        html += '<div class="carousel-dots" style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10">';
+        for(let i = 0; i < images.length; i++){
+          html += `<div class="carousel-dot ${i === 0 ? 'active' : ''}" style="width:8px;height:8px;border-radius:50%;background:${i === 0 ? 'white' : 'rgba(255,255,255,0.5)'};cursor:pointer"></div>`;
+        }
+        html += '</div>';
+      }
+      
+      html += '</div>';
+      return html;
+    }
+
+    // Initialize Carousel Interactions
+    function initCarousel(container){
+      const carousel = container.querySelector('.image-carousel');
+      if(!carousel) return;
+      
+      const track = carousel.querySelector('.carousel-track');
+      const slides = carousel.querySelectorAll('.carousel-slide');
+      const prevBtn = carousel.querySelector('.carousel-prev');
+      const nextBtn = carousel.querySelector('.carousel-next');
+      const dots = carousel.querySelectorAll('.carousel-dot');
+      
+      let currentIndex = 0;
+      const totalSlides = slides.length;
+      
+      function updateCarousel(){
+        track.style.transform = `translateX(-${currentIndex * 100}%)`;
+        dots.forEach((dot, idx) => {
+          dot.classList.toggle('active', idx === currentIndex);
+          dot.style.background = idx === currentIndex ? 'white' : 'rgba(255,255,255,0.5)';
+        });
+      }
+      
+      function goToSlide(index){
+        currentIndex = Math.max(0, Math.min(index, totalSlides - 1));
+        updateCarousel();
+      }
+      
+      if(prevBtn){
+        prevBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          goToSlide(currentIndex - 1);
+        });
+      }
+      
+      if(nextBtn){
+        nextBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          goToSlide(currentIndex + 1);
+        });
+      }
+      
+      dots.forEach((dot, idx) => {
+        dot.addEventListener('click', (e) => {
+          e.stopPropagation();
+          goToSlide(idx);
+        });
+      });
+      
+      let startX = 0;
+      let currentX = 0;
+      let isDragging = false;
+      
+      carousel.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX;
+        isDragging = true;
+      });
+      
+      carousel.addEventListener('touchmove', (e) => {
+        if(!isDragging) return;
+        currentX = e.touches[0].clientX;
+      });
+      
+      carousel.addEventListener('touchend', () => {
+        if(!isDragging) return;
+        const diff = startX - currentX;
+        if(Math.abs(diff) > 50){
+          if(diff > 0){
+            goToSlide(currentIndex + 1);
+          } else {
+            goToSlide(currentIndex - 1);
+          }
+        }
+        isDragging = false;
+      });
+      
+      carousel.addEventListener('mousedown', (e) => {
+        startX = e.clientX;
+        isDragging = true;
+        carousel.style.cursor = 'grabbing';
+      });
+      
+      carousel.addEventListener('mousemove', (e) => {
+        if(!isDragging) return;
+        currentX = e.clientX;
+      });
+      
+      carousel.addEventListener('mouseup', () => {
+        if(!isDragging) return;
+        const diff = startX - currentX;
+        if(Math.abs(diff) > 50){
+          if(diff > 0){
+            goToSlide(currentIndex + 1);
+          } else {
+            goToSlide(currentIndex - 1);
+          }
+        }
+        isDragging = false;
+        carousel.style.cursor = 'grab';
+      });
+      
+      carousel.addEventListener('mouseleave', () => {
+        isDragging = false;
+        carousel.style.cursor = 'grab';
+      });
+    }
+
+    function loadCart(){ 
+      try{ 
+        return JSON.parse(localStorage.getItem(CART_KEY) || '[]'); 
+      }catch(e){ 
+        return []; 
+      } 
+    }
+
+    function saveCart(c){ 
+      localStorage.setItem(CART_KEY, JSON.stringify(c)); 
+      renderCart(); 
+      updateCartBadges(); 
+    }
+
+    function loadProfile(){ 
+      try{ 
+        return JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); 
+      }catch(e){ 
+        return null; 
+      } 
+    }
+
+    function saveProfile(p){ 
+      localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); 
+    }
 
     function parseDate(dateStr){
       if(!dateStr) return null;
       
-      // Trim whitespace
       dateStr = String(dateStr).trim();
       if(dateStr === '') return null;
       
-      // Try ISO format first (YYYY-MM-DD)
       if(dateStr.match(/^\d{4}-\d{1,2}-\d{1,2}$/)){
         const [year, month, day] = dateStr.split('-').map(x => parseInt(x));
         return new Date(year, month - 1, day);
       }
       
-      // Try MM/DD/YYYY format
       if(dateStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)){
         const parts = dateStr.split('/');
         const month = parseInt(parts[0]);
@@ -516,7 +679,6 @@
         return new Date(year, month - 1, day);
       }
       
-      // Fallback to Date constructor
       const date = new Date(dateStr);
       return isNaN(date.getTime()) ? null : date;
     }
@@ -530,6 +692,21 @@
       now.setHours(0,0,0,0);
       const start = parseDate(product.promo_mulai);
       const end = parseDate(product.promo_selesai);
+      
+      if(!start || !end) return false;
+      start.setHours(0,0,0,0);
+      end.setHours(23,59,59,999);
+      
+      return now >= start && now <= end;
+    }
+
+    function isBundlePromoActive(bundle){
+      if(!bundle.bundle_promo_mulai || !bundle.bundle_promo_selesai) return false;
+      
+      const now = new Date();
+      now.setHours(0,0,0,0);
+      const start = parseDate(bundle.bundle_promo_mulai);
+      const end = parseDate(bundle.bundle_promo_selesai);
       
       if(!start || !end) return false;
       start.setHours(0,0,0,0);
@@ -627,7 +804,6 @@
         const card = document.createElement('div');
         card.className = 'product-card';
         
-        // Parse images
         const images = parseImages(p.gambar);
         const firstImage = images.length > 0 ? images[0] : '';
         const imgHtml = firstImage ? `<img src="${firstImage}" alt="${p.nama}">` : '<div style="color:var(--text-muted);font-size:12px">No Image</div>';
@@ -636,8 +812,15 @@
         let priceHtml = '';
         
         if(p.isBundle){
-          badgeHtml = '<div class="badge bundle">PAKET</div>';
-          priceHtml = `<div class="price-normal">${formatRp(p.harga_bundle)}</div>`;
+          const bundlePromoActive = isBundlePromoActive(p);
+          if(bundlePromoActive && p.harga_bundle_original){
+            const percent = getDiscountPercent(p.harga_bundle_original, p.harga_bundle);
+            badgeHtml = `<div class="badge promo">-${percent}%</div>`;
+            priceHtml = `<div class="price-wrapper"><div class="price-original">${formatRp(p.harga_bundle_original)}</div><div class="price-promo">${formatRp(p.harga_bundle)}</div></div>`;
+          } else {
+            badgeHtml = '<div class="badge bundle">PAKET</div>';
+            priceHtml = `<div class="price-normal">${formatRp(p.harga_bundle)}</div>`;
+          }
         } else {
           const promoActive = isPromoActive(p);
           if(promoActive){
@@ -650,8 +833,6 @@
         }
 
         const bundleItemsHtml = p.isBundle && p.bundleItems ? `<div class="bundle-items">Isi: ${p.bundleItems}</div>` : '';
-        
-        // Add indicator if multiple images
         const multiImageIndicator = images.length > 1 ? `<div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.6);color:white;padding:4px 8px;border-radius:12px;font-size:11px;font-weight:600">📷 ${images.length}</div>` : '';
 
         card.innerHTML = `
@@ -713,6 +894,7 @@
         if(!isBundle && cartItem.qty + qty > item.stok) return alert('Jumlah melebihi stok');
         cartItem.qty += qty;
       } else {
+        const images = parseImages(item.gambar);
         cart.push({
           id,
           name: item.nama,
@@ -720,7 +902,7 @@
           qty,
           unit: item.satuan || 'paket',
           isBundle: isBundle || false,
-          image: item.gambar || ''
+          image: images.length > 0 ? images[0] : ''
         });
       }
       saveCart(cart);
@@ -779,7 +961,6 @@
       if(!item) return;
       const modal = document.getElementById('productModalContent');
       
-      // Parse images
       const images = parseImages(item.gambar);
       const carouselHtml = createImageCarousel(images, item.nama);
       
@@ -790,7 +971,6 @@
       let qtyInputHtml = '';
       
       if(isBundle){
-        // Check bundle promo
         const bundlePromoActive = item.bundle_promo_mulai && item.bundle_promo_selesai && isBundlePromoActive(item);
         if(bundlePromoActive && item.harga_bundle_original){
           const percent = getDiscountPercent(item.harga_bundle_original, item.harga_bundle);
@@ -856,7 +1036,6 @@
         </div>
       `;
       
-      // Initialize carousel if multiple images
       setTimeout(() => {
         const carouselContainer = modal.querySelector('.modal-image');
         if(carouselContainer){
@@ -871,21 +1050,6 @@
         closeModal('productModal');
       });
       document.getElementById('productModal').classList.add('show');
-    }
-    
-    function isBundlePromoActive(bundle){
-      if(!bundle.bundle_promo_mulai || !bundle.bundle_promo_selesai) return false;
-      
-      const now = new Date();
-      now.setHours(0,0,0,0);
-      const start = parseDate(bundle.bundle_promo_mulai);
-      const end = parseDate(bundle.bundle_promo_selesai);
-      
-      if(!start || !end) return false;
-      start.setHours(0,0,0,0);
-      end.setHours(23,59,59,999);
-      
-      return now >= start && now <= end;
     }
 
     function closeModal(id){
@@ -934,13 +1098,11 @@
       btn.disabled = true;
 
       try{
-        // Step 1: Validate & Update Stock
         const stockResult = await updateStockAPI(cart);
         if(!stockResult.success){
           throw new Error(stockResult.message || 'Stok tidak cukup');
         }
         
-        // Step 2: Prepare Telegram payload
         const payload = {
           customer: {
             name: profile.name,
@@ -955,7 +1117,6 @@
           note
         };
         
-        // Step 3: Send to Telegram
         btn.textContent = '⏳ Mengirim pesanan...';
         const res = await fetch(CLOUDFLARE_WORKER_URL, {
           method:'POST',
@@ -967,12 +1128,10 @@
         const data = await res.json();
         if(!data.success) throw new Error(data.message||'Gagal mengirim pesanan');
         
-        // Success!
         saveCart([]);
         alert('✅ Pesanan berhasil dikirim!\nTerima kasih sudah berbelanja.');
         closeModal('cartPanel');
         
-        // Reload products to refresh stock display
         setTimeout(() => {
           loadProducts();
         }, 1000);
@@ -980,9 +1139,6 @@
       }catch(err){
         console.error(err);
         alert('❌ Gagal: ' + err.message);
-        
-        // TODO: Implement rollback if needed
-        // For now, stock already updated, admin can manually adjust
       }finally{
         btn.textContent = '🛍️ Pesan Sekarang';
         btn.disabled = false;
@@ -1250,16 +1406,12 @@
           
           const firstProduct = ALL_PRODUCTS.find(x=>x.id===prodIds[0]);
           
-          // Check if bundle has promo
           const hasPromo = b.bundle_promo_mulai && b.bundle_promo_selesai;
           let finalPrice = Number(b.harga_bundle||b.harga||0);
           let originalPrice = null;
           
-          if(hasPromo){
-            // If promo exists, harga_bundle is the discounted price
-            // We need to calculate or get original price
-            // For now, we'll mark it for promo detection
-            originalPrice = finalPrice; // This should be adjusted based on your data structure
+          if(hasPromo && b.harga_bundle_original){
+            originalPrice = Number(b.harga_bundle_original);
           }
           
           return {
@@ -1269,7 +1421,7 @@
             harga_bundle_original: originalPrice,
             produk_ids: prodIds,
             bundleItems: items.length > 0 ? items.join(', ') : 'Paket Hemat',
-            gambar: b.bundle_gambar || firstProduct?.gambar || '',
+            gambar: b.bundle_gambar || b.gambar || firstProduct?.gambar || '',
             kategori: firstProduct?.kategori || 'Bundle',
             deskripsi: items.length > 0 ? `Paket hemat berisi: ${items.join(', ')}` : 'Paket hemat produk pilihan',
             satuan: 'paket',
@@ -1336,4 +1488,3 @@
   </script>
 </body>
 </html>
-
