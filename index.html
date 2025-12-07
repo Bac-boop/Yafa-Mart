@@ -460,11 +460,23 @@
   </div>
 
   <script>
-    const CLOUDFLARE_WORKER_URL = 'https:' + '//yafamart-telegram-api.baculum19.workers.dev';
-    const SHEET_API = 'https://script.google.com/macros/s/AKfycbxnxDnQ-2XeLQm_fKxJUs9wkfs5VCEvrTIsevZe_kDd_jz16qVK8Whegi9aJ_hkVOk/exec';
+    /*const CLOUDFLARE_WORKER_URL = 'https:' + '//yafamart-telegram-api.baculum19.workers.dev';
+    const SHEET_API = 'https://script.google.com/macros/s/AKfycbxFJJUPOszxHhSQ2H5BwHnadMo8yTM1eFGVCQgucXnhdOsPVRjpH1BQtnaDR6Vh3PTq/exec';
+    const PAGE_SIZE = 20;
+    const CART_KEY = 'yafa_cart_v2';
+    const PROFILE_KEY = 'yafa_profile_v2';*/
+
+    const CLOUDFLARE_WORKER_URL = 'https://yafamart-telegram-api.baculum19.workers.dev';
+
+    // PAKAI URL API YANG KAMU KIRIMKAN
+    const SHEET_API = 'https://script.google.com/macros/s/AKfycbwzXtnRoguXcwGdrP6gWNsy6nUpmVbiVNHlC745vCdglqGvhp4KIQq7HpOl5ado1GDT/exec';
+
+    // MASUKKAN API KEY FRONT END UNTUK TESTING
+    const API_KEY = 'yafamart-abc123';   // Samakan dengan Apps Script Properties
     const PAGE_SIZE = 20;
     const CART_KEY = 'yafa_cart_v2';
     const PROFILE_KEY = 'yafa_profile_v2';
+
 
     let ALL_PRODUCTS = [];
     let ALL_BUNDLES = [];
@@ -1177,27 +1189,61 @@
       try{
         console.log('Updating stock with cart:', cart);
         
-        const res = await fetch(`${SHEET_API}?method=POST`, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            action: 'checkout',
-            cart: cart
-          })
-        });
-        
-        console.log('Stock API Response status:', res.status);
-        
-        if(!res.ok){
-          const errorText = await res.text();
-          console.error('Stock API Error Response:', errorText);
-          throw new Error('Failed to update stock: ' + res.status);
+        // Process each item in cart
+        const updates = [];
+        for(const item of cart){
+          if(item.isBundle){
+            // For bundle, we need to reduce stock of each product in the bundle
+            // First get bundle details
+            const bundleId = String(item.id).replace('bundle_', '');
+            const bundle = ALL_BUNDLES.find(b => b.id === item.id);
+            
+            if(bundle && bundle.produk && bundle.produk.length > 0){
+              // Reduce stock for each product in bundle
+              for(const prod of bundle.produk){
+                if(prod && !prod._missing){
+                  updates.push({
+                    action: 'sell',
+                    id: prod.id,
+                    qty: item.qty, // Each bundle contains 1 of each product
+                    key: API_KEY
+                  });
+                }
+              }
+            }
+          } else {
+            // Regular product
+            updates.push({
+              action: 'sell',
+              id: item.id,
+              qty: item.qty,
+              key: API_KEY
+            });
+          }
         }
         
-        const data = await res.json();
-        console.log('Stock API Response data:', data);
+        // Execute all stock updates
+        console.log('Executing stock updates:', updates);
+        const results = await Promise.all(
+          updates.map(update => 
+            fetch(SHEET_API, {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify(update)
+            }).then(r => r.json())
+          )
+        );
         
-        return data;
+        console.log('Stock update results:', results);
+        
+        // Check if any update failed
+        const failed = results.find(r => r.error);
+        if(failed){
+          return { success: false, message: failed.error };
+        }
+        
+        return { success: true, message: 'Stock updated successfully' };
+        
       }catch(err){
         console.error('Stock update error:', err);
         return { success: false, message: err.message };
@@ -1350,44 +1396,215 @@
       });
     }
 
-    async function fetchSheet(name){
+    // ============================================
+    // API CALLS - Using action parameter system
+    // ============================================
+    
+    async function fetchProducts(){
       try {
-        const url = `${SHEET_API}?sheet=${name}`;
+        const url = `${SHEET_API}?action=getProducts&key=${API_KEY}`;
         const res = await fetch(url);
-        if(!res.ok) return [];
+        if(!res.ok) throw new Error('Failed to fetch products');
         const data = await res.json();
         return Array.isArray(data) ? data : [];
       } catch(e) {
+        console.error('fetchProducts error:', e);
         return [];
       }
     }
 
+    async function fetchProductById(id){
+      try {
+        const url = `${SHEET_API}?action=getProductById&id=${id}&key=${API_KEY}`;
+        const res = await fetch(url);
+        if(!res.ok) throw new Error('Failed to fetch product');
+        const data = await res.json();
+        return data;
+      } catch(e) {
+        console.error('fetchProductById error:', e);
+        return null;
+      }
+    }
+
+    async function fetchProductByBarcode(barcode){
+      try {
+        const url = `${SHEET_API}?action=getProductByBarcode&barcode=${barcode}&key=${API_KEY}`;
+        const res = await fetch(url);
+        if(!res.ok) throw new Error('Failed to fetch product');
+        const data = await res.json();
+        return data;
+      } catch(e) {
+        console.error('fetchProductByBarcode error:', e);
+        return null;
+      }
+    }
+
+    async function fetchPromoProducts(){
+      try {
+        const url = `${SHEET_API}?action=getPromoProducts&key=${API_KEY}`;
+        const res = await fetch(url);
+        if(!res.ok) throw new Error('Failed to fetch promo products');
+        const data = await res.json();
+        return Array.isArray(data) ? data : [];
+      } catch(e) {
+        console.error('fetchPromoProducts error:', e);
+        return [];
+      }
+    }
+
+    async function fetchBundles(){
+      try {
+        const url = `${SHEET_API}?action=getBundles&key=${API_KEY}`;
+        const res = await fetch(url);
+        if(!res.ok) throw new Error('Failed to fetch bundles');
+        const data = await res.json();
+        return Array.isArray(data) ? data : [];
+      } catch(e) {
+        console.error('fetchBundles error:', e);
+        return [];
+      }
+    }
+
+    async function fetchBundleById(bundleId){
+      try {
+        const url = `${SHEET_API}?action=getBundleById&bundle_id=${bundleId}&key=${API_KEY}`;
+        const res = await fetch(url);
+        if(!res.ok) throw new Error('Failed to fetch bundle');
+        const data = await res.json();
+        return data;
+      } catch(e) {
+        console.error('fetchBundleById error:', e);
+        return null;
+      }
+    }
+
+    async function fetchStatus(){
+      try {
+        const url = `${SHEET_API}?action=getStatus&key=${API_KEY}`;
+        const res = await fetch(url);
+        if(!res.ok) throw new Error('Failed to fetch status');
+        const data = await res.json();
+        return data && typeof data === 'object' ? data : null;
+      } catch(e) {
+        console.error('fetchStatus error:', e);
+        return null;
+      }
+    }
+
+    async function searchProducts(query){
+      try {
+        const url = `${SHEET_API}?action=searchProducts&q=${encodeURIComponent(query)}&key=${API_KEY}`;
+        const res = await fetch(url);
+        if(!res.ok) throw new Error('Failed to search products');
+        const data = await res.json();
+        return Array.isArray(data) ? data : [];
+      } catch(e) {
+        console.error('searchProducts error:', e);
+        return [];
+      }
+    }
+
+    async function addStockAPI(productId, qty, note){
+      try {
+        const res = await fetch(SHEET_API, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            action: 'addStock',
+            id: productId,
+            qty: qty,
+            note: note || '',
+            key: API_KEY
+          })
+        });
+        if(!res.ok) throw new Error('Failed to add stock');
+        const data = await res.json();
+        return data;
+      } catch(e) {
+        console.error('addStockAPI error:', e);
+        return { error: e.message };
+      }
+    }
+
+    async function sellProductAPI(productId, qty){
+      try {
+        const res = await fetch(SHEET_API, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            action: 'sell',
+            id: productId,
+            qty: qty,
+            key: API_KEY
+          })
+        });
+        if(!res.ok) throw new Error('Failed to sell product');
+        const data = await res.json();
+        return data;
+      } catch(e) {
+        console.error('sellProductAPI error:', e);
+        return { error: e.message };
+      }
+    }
+
+    async function updateStatusAPI(statusData){
+      try {
+        const res = await fetch(SHEET_API, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            action: 'updateStatus',
+            ...statusData,
+            key: API_KEY
+          })
+        });
+        if(!res.ok) throw new Error('Failed to update status');
+        const data = await res.json();
+        return data;
+      } catch(e) {
+        console.error('updateStatusAPI error:', e);
+        return { error: e.message };
+      }
+    }
+
+    // ============================================
+    // LEGACY fetchSheet - now calls specific APIs
+    // ============================================
+    async function fetchSheet(name){
+      if(name === 'produk') return await fetchProducts();
+      if(name === 'bundle') return await fetchBundles();
+      if(name === 'status') {
+        const status = await fetchStatus();
+        return status ? [status] : [];
+      }
+      return [];
+    }
+
     async function loadAllData(){
       try {
+        console.log('Loading all data from API...');
+        
         const [produk, bundle, status] = await Promise.all([
-          fetchSheet('produk'),
-          fetchSheet('bundle'),
-          fetchSheet('status')
+          fetchProducts(),
+          fetchBundles(),
+          fetchStatus()
         ]);
 
-        if(produk && produk.length > 0){
-          return { 
-            produk, 
-            bundle: bundle || [], 
-            status: (status && status.length > 0) ? status[0] : null 
-          };
-        }
-        
-        const res = await fetch(SHEET_API);
-        if(!res.ok) throw new Error('HTTP ' + res.status);
-        const data = await res.json();
-        return { produk: data, bundle: [], status: null };
+        console.log('Data loaded:', {
+          products: produk.length,
+          bundles: bundle.length,
+          status: status
+        });
+
+        return { 
+          produk: produk || [], 
+          bundle: bundle || [], 
+          status: status || null 
+        };
         
       } catch(err) {
         console.error('Error loading data:', err);
-        const res = await fetch(SHEET_API);
-        const data = await res.json();
-        return { produk: data, bundle: [], status: null };
+        return { produk: [], bundle: [], status: null };
       }
     }
 
@@ -1437,16 +1654,34 @@
         }));
 
         ALL_BUNDLES = bundle.map(b=>{
-          const prodIds = String(b.produk_ids || b.product_ids || '').split(',').map(x=>x.trim()).filter(Boolean);
-          const items = prodIds.map(id=>{
-            const p = ALL_PRODUCTS.find(x=>x.id===id);
-            return p ? p.nama : null;
-          }).filter(Boolean);
+          const prodIds = String(b.produk_ids || '').split(',').map(x=>x.trim()).filter(Boolean);
           
-          const firstProduct = ALL_PRODUCTS.find(x=>x.id===prodIds[0]);
+          // Get product details from expanded bundle.produk array
+          const items = [];
+          const produkDetails = [];
+          
+          if(b.produk && Array.isArray(b.produk)){
+            b.produk.forEach(p => {
+              if(p && !p._missing){
+                items.push(p.nama || 'Produk');
+                produkDetails.push(p);
+              }
+            });
+          } else {
+            // Fallback to manual lookup
+            prodIds.forEach(id => {
+              const p = ALL_PRODUCTS.find(x => x.id === id);
+              if(p){
+                items.push(p.nama);
+                produkDetails.push(p);
+              }
+            });
+          }
+          
+          const firstProduct = produkDetails[0] || ALL_PRODUCTS.find(x => x.id === prodIds[0]);
           
           const hasPromo = b.bundle_promo_mulai && b.bundle_promo_selesai;
-          let finalPrice = Number(b.harga_bundle||b.harga||0);
+          let finalPrice = Number(b.harga_bundle || b.harga || 0);
           let originalPrice = null;
           
           // Get original price if promo exists
@@ -1470,6 +1705,7 @@
             harga_bundle: finalPrice,
             harga_bundle_original: originalPrice,
             produk_ids: prodIds,
+            produk: produkDetails, // Store product details for stock reduction
             bundleItems: items.length > 0 ? items.join(', ') : 'Paket Hemat',
             gambar: bundleImage,
             kategori: firstProduct?.kategori || 'Bundle',
