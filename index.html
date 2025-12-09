@@ -1151,24 +1151,30 @@
     async function updateStockAPI(cart) {
   try {
     const updates = cart.map(item => ({
-      row_id: item.id,         // harus row_id
-      fields: { stok: item.sisaStok } // harus fields:{}
+      id: item.id,
+      stok: item.sisaStok
     }));
 
-    const response = await fetch(`${SHEET_API}/update_stok`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ updates })
-    });
+    const results = await Promise.all(
+      updates.map(u =>
+        fetch(`${SHEET_API}/update_stok`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: u.id,
+            stok: u.stok
+          })
+        }).then(r => r.json())
+      )
+    );
 
-    return await response.json();
+    console.log("Update stok selesai:", results);
+    return true;
   } catch (err) {
-    console.error("updateStockAPI error:", err);
-    return { error: true };
+    console.error("Gagal update stok:", err);
+    return false;
   }
 }
-
-
 
     function showCustomerForm(){
       return new Promise(resolve=>{
@@ -1495,5 +1501,3 @@
   </script>
 </body>
 </html>
-
-
