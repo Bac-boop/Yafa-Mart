@@ -460,23 +460,11 @@
   </div>
 
   <script>
-    /*const CLOUDFLARE_WORKER_URL = 'https:' + '//yafamart-telegram-api.baculum19.workers.dev';
-    const SHEET_API = 'https://script.google.com/macros/s/AKfycbxFJJUPOszxHhSQ2H5BwHnadMo8yTM1eFGVCQgucXnhdOsPVRjpH1BQtnaDR6Vh3PTq/exec';
-    const PAGE_SIZE = 20;
-    const CART_KEY = 'yafa_cart_v2';
-    const PROFILE_KEY = 'yafa_profile_v2';*/
-
-    const CLOUDFLARE_WORKER_URL = 'https://yafamart-telegram-api.baculum19.workers.dev';
-
-    // PAKAI URL API YANG KAMU KIRIMKAN
-    const SHEET_API = 'https://script.google.com/macros/s/AKfycbwzXtnRoguXcwGdrP6gWNsy6nUpmVbiVNHlC745vCdglqGvhp4KIQq7HpOl5ado1GDT/exec';
-
-    // MASUKKAN API KEY FRONT END UNTUK TESTING
-    const API_KEY = 'yafamart-abc123';   // Samakan dengan Apps Script Properties
+    const CLOUDFLARE_WORKER_URL = 'https:' + '//yafamart-telegram-api.baculum19.workers.dev';
+    const WORKER_BASE_URL = 'https:' + '//yafamart-sheet-api.baculum19.workers.dev';
     const PAGE_SIZE = 20;
     const CART_KEY = 'yafa_cart_v2';
     const PROFILE_KEY = 'yafa_profile_v2';
-
 
     let ALL_PRODUCTS = [];
     let ALL_BUNDLES = [];
@@ -1193,32 +1181,32 @@
         const updates = [];
         for(const item of cart){
           if(item.isBundle){
-            // For bundle, we need to reduce stock of each product in the bundle
-            // First get bundle details
-            const bundleId = String(item.id).replace('bundle_', '');
+            // For bundle, reduce stock of each product in the bundle
             const bundle = ALL_BUNDLES.find(b => b.id === item.id);
             
             if(bundle && bundle.produk && bundle.produk.length > 0){
-              // Reduce stock for each product in bundle
               for(const prod of bundle.produk){
-                if(prod && !prod._missing){
+                if(prod && prod.id){
+                  const currentStock = Number(prod.stok || 0);
+                  const newStock = Math.max(0, currentStock - item.qty);
                   updates.push({
-                    action: 'sell',
                     id: prod.id,
-                    qty: item.qty, // Each bundle contains 1 of each product
-                    key: API_KEY
+                    stok_baru: newStock
                   });
                 }
               }
             }
           } else {
             // Regular product
-            updates.push({
-              action: 'sell',
-              id: item.id,
-              qty: item.qty,
-              key: API_KEY
-            });
+            const product = ALL_PRODUCTS.find(p => p.id === item.id);
+            if(product){
+              const currentStock = Number(product.stok || 0);
+              const newStock = Math.max(0, currentStock - item.qty);
+              updates.push({
+                id: item.id,
+                stok_baru: newStock
+              });
+            }
           }
         }
         
@@ -1226,7 +1214,7 @@
         console.log('Executing stock updates:', updates);
         const results = await Promise.all(
           updates.map(update => 
-            fetch(SHEET_API, {
+            fetch(`${WORKER_BASE_URL}/update_stok`, {
               method: 'POST',
               headers: {'Content-Type': 'application/json'},
               body: JSON.stringify(update)
@@ -1397,165 +1385,124 @@
     }
 
     // ============================================
-    // API CALLS - Using action parameter system
+    // API CALLS - Baserow via Cloudflare Worker
     // ============================================
     
     async function fetchProducts(){
       try {
-        const url = `${SHEET_API}?action=getProducts&key=${API_KEY}`;
+        const url = `${WORKER_BASE_URL}/produk`;
         const res = await fetch(url);
         if(!res.ok) throw new Error('Failed to fetch products');
         const data = await res.json();
-        return Array.isArray(data) ? data : [];
+        // Baserow returns {results: [...]}
+        return Array.isArray(data.results) ? data.results : [];
       } catch(e) {
         console.error('fetchProducts error:', e);
         return [];
       }
     }
 
-    async function fetchProductById(id){
-      try {
-        const url = `${SHEET_API}?action=getProductById&id=${id}&key=${API_KEY}`;
-        const res = await fetch(url);
-        if(!res.ok) throw new Error('Failed to fetch product');
-        const data = await res.json();
-        return data;
-      } catch(e) {
-        console.error('fetchProductById error:', e);
-        return null;
-      }
-    }
-
-    async function fetchProductByBarcode(barcode){
-      try {
-        const url = `${SHEET_API}?action=getProductByBarcode&barcode=${barcode}&key=${API_KEY}`;
-        const res = await fetch(url);
-        if(!res.ok) throw new Error('Failed to fetch product');
-        const data = await res.json();
-        return data;
-      } catch(e) {
-        console.error('fetchProductByBarcode error:', e);
-        return null;
-      }
-    }
-
-    async function fetchPromoProducts(){
-      try {
-        const url = `${SHEET_API}?action=getPromoProducts&key=${API_KEY}`;
-        const res = await fetch(url);
-        if(!res.ok) throw new Error('Failed to fetch promo products');
-        const data = await res.json();
-        return Array.isArray(data) ? data : [];
-      } catch(e) {
-        console.error('fetchPromoProducts error:', e);
-        return [];
-      }
-    }
-
     async function fetchBundles(){
       try {
-        const url = `${SHEET_API}?action=getBundles&key=${API_KEY}`;
+        const url = `${WORKER_BASE_URL}/bundle`;
         const res = await fetch(url);
         if(!res.ok) throw new Error('Failed to fetch bundles');
         const data = await res.json();
-        return Array.isArray(data) ? data : [];
+        return Array.isArray(data.results) ? data.results : [];
       } catch(e) {
         console.error('fetchBundles error:', e);
         return [];
       }
     }
 
-    async function fetchBundleById(bundleId){
-      try {
-        const url = `${SHEET_API}?action=getBundleById&bundle_id=${bundleId}&key=${API_KEY}`;
-        const res = await fetch(url);
-        if(!res.ok) throw new Error('Failed to fetch bundle');
-        const data = await res.json();
-        return data;
-      } catch(e) {
-        console.error('fetchBundleById error:', e);
-        return null;
-      }
-    }
-
     async function fetchStatus(){
       try {
-        const url = `${SHEET_API}?action=getStatus&key=${API_KEY}`;
+        const url = `${WORKER_BASE_URL}/status`;
         const res = await fetch(url);
         if(!res.ok) throw new Error('Failed to fetch status');
         const data = await res.json();
-        return data && typeof data === 'object' ? data : null;
+        // Return first row from status table
+        return (data.results && data.results.length > 0) ? data.results[0] : null;
       } catch(e) {
         console.error('fetchStatus error:', e);
         return null;
       }
     }
 
-    async function searchProducts(query){
-      try {
-        const url = `${SHEET_API}?action=searchProducts&q=${encodeURIComponent(query)}&key=${API_KEY}`;
-        const res = await fetch(url);
-        if(!res.ok) throw new Error('Failed to search products');
-        const data = await res.json();
-        return Array.isArray(data) ? data : [];
-      } catch(e) {
-        console.error('searchProducts error:', e);
-        return [];
-      }
-    }
-
-    async function addStockAPI(productId, qty, note){
-      try {
-        const res = await fetch(SHEET_API, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            action: 'addStock',
-            id: productId,
-            qty: qty,
-            note: note || '',
-            key: API_KEY
-          })
-        });
-        if(!res.ok) throw new Error('Failed to add stock');
-        const data = await res.json();
-        return data;
-      } catch(e) {
-        console.error('addStockAPI error:', e);
-        return { error: e.message };
-      }
-    }
-
-    async function sellProductAPI(productId, qty){
-      try {
-        const res = await fetch(SHEET_API, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            action: 'sell',
-            id: productId,
-            qty: qty,
-            key: API_KEY
-          })
-        });
-        if(!res.ok) throw new Error('Failed to sell product');
-        const data = await res.json();
-        return data;
-      } catch(e) {
-        console.error('sellProductAPI error:', e);
-        return { error: e.message };
+    async function updateStockAPI(cart){
+      try{
+        console.log('Updating stock with cart:', cart);
+        
+        // Process each item in cart
+        const updates = [];
+        for(const item of cart){
+          if(item.isBundle){
+            // For bundle, reduce stock of each product in the bundle
+            const bundle = ALL_BUNDLES.find(b => b.id === item.id);
+            
+            if(bundle && bundle.produk && bundle.produk.length > 0){
+              for(const prod of bundle.produk){
+                if(prod && prod.id){
+                  const currentStock = Number(prod.stok || 0);
+                  const newStock = Math.max(0, currentStock - item.qty);
+                  updates.push({
+                    id: prod.id,
+                    stok_baru: newStock
+                  });
+                }
+              }
+            }
+          } else {
+            // Regular product
+            const product = ALL_PRODUCTS.find(p => p.id === item.id);
+            if(product){
+              const currentStock = Number(product.stok || 0);
+              const newStock = Math.max(0, currentStock - item.qty);
+              updates.push({
+                id: item.id,
+                stok_baru: newStock
+              });
+            }
+          }
+        }
+        
+        // Execute all stock updates
+        console.log('Executing stock updates:', updates);
+        const results = await Promise.all(
+          updates.map(update => 
+            fetch(`${WORKER_BASE_URL}/update_stok`, {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify(update)
+            }).then(r => r.json())
+          )
+        );
+        
+        console.log('Stock update results:', results);
+        
+        // Check if any update failed
+        const failed = results.find(r => r.error);
+        if(failed){
+          return { success: false, message: failed.error };
+        }
+        
+        return { success: true, message: 'Stock updated successfully' };
+        
+      }catch(err){
+        console.error('Stock update error:', err);
+        return { success: false, message: err.message };
       }
     }
 
     async function updateStatusAPI(statusData){
       try {
-        const res = await fetch(SHEET_API, {
+        const res = await fetch(`${WORKER_BASE_URL}/update_status`, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({
-            action: 'updateStatus',
-            ...statusData,
-            key: API_KEY
+            id: statusData.id || 1, // Default to first row
+            status: statusData.status_toko,
+            catatan: statusData.catatan
           })
         });
         if(!res.ok) throw new Error('Failed to update status');
@@ -1567,22 +1514,9 @@
       }
     }
 
-    // ============================================
-    // LEGACY fetchSheet - now calls specific APIs
-    // ============================================
-    async function fetchSheet(name){
-      if(name === 'produk') return await fetchProducts();
-      if(name === 'bundle') return await fetchBundles();
-      if(name === 'status') {
-        const status = await fetchStatus();
-        return status ? [status] : [];
-      }
-      return [];
-    }
-
     async function loadAllData(){
       try {
-        console.log('Loading all data from API...');
+        console.log('Loading all data from Baserow via Worker...');
         
         const [produk, bundle, status] = await Promise.all([
           fetchProducts(),
@@ -1654,42 +1588,37 @@
         }));
 
         ALL_BUNDLES = bundle.map(b=>{
-          const prodIds = String(b.produk_ids || '').split(',').map(x=>x.trim()).filter(Boolean);
+          // Parse produk_ids (format: "1,2,3" atau "[1,2,3]")
+          let prodIds = [];
+          if(b.produk_ids){
+            const idsStr = String(b.produk_ids).replace(/[\[\]]/g, '');
+            prodIds = idsStr.split(',').map(x=>x.trim()).filter(Boolean);
+          }
           
-          // Get product details from expanded bundle.produk array
+          // Get product details
           const items = [];
           const produkDetails = [];
           
-          if(b.produk && Array.isArray(b.produk)){
-            b.produk.forEach(p => {
-              if(p && !p._missing){
-                items.push(p.nama || 'Produk');
-                produkDetails.push(p);
-              }
-            });
-          } else {
-            // Fallback to manual lookup
-            prodIds.forEach(id => {
-              const p = ALL_PRODUCTS.find(x => x.id === id);
-              if(p){
-                items.push(p.nama);
-                produkDetails.push(p);
-              }
-            });
-          }
+          prodIds.forEach(id => {
+            const p = ALL_PRODUCTS.find(x => String(x.id) === String(id));
+            if(p){
+              items.push(p.nama);
+              produkDetails.push(p);
+            }
+          });
           
-          const firstProduct = produkDetails[0] || ALL_PRODUCTS.find(x => x.id === prodIds[0]);
+          const firstProduct = produkDetails[0];
           
+          // Check if bundle has promo
           const hasPromo = b.bundle_promo_mulai && b.bundle_promo_selesai;
           let finalPrice = Number(b.harga_bundle || b.harga || 0);
           let originalPrice = null;
           
-          // Get original price if promo exists
           if(hasPromo && b.harga_bundle_original){
             originalPrice = Number(b.harga_bundle_original);
           }
           
-          // Get bundle image - prioritize bundle_gambar, fallback to gambar, then first product
+          // Get bundle image
           let bundleImage = '';
           if(b.bundle_gambar){
             bundleImage = b.bundle_gambar;
@@ -1700,12 +1629,13 @@
           }
           
           return {
-            id: 'bundle_' + String(b.bundle_id || b.id),
+            id: 'bundle_' + String(b.id),
+            baserow_id: b.id, // Keep original Baserow ID
             nama: b.bundle_nama || b.nama || 'Paket Bundle',
             harga_bundle: finalPrice,
             harga_bundle_original: originalPrice,
             produk_ids: prodIds,
-            produk: produkDetails, // Store product details for stock reduction
+            produk: produkDetails,
             bundleItems: items.length > 0 ? items.join(', ') : 'Paket Hemat',
             gambar: bundleImage,
             kategori: firstProduct?.kategori || 'Bundle',
