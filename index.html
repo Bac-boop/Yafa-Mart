@@ -1148,25 +1148,24 @@
       }
     }
     
-    async function updateStockAPI(cart) {
+    async function updateStockAPI(cart){
   try {
-    const updates = cart.map(item => ({
-      id: item.id,
-      stok: item.sisaStok
-    }));
+    const res = await fetch(SHEET_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'checkout',
+        cart: cart
+      })
+    });
 
-    const results = await Promise.all(
-      updates.map(u =>
-        fetch(`${SHEET_API}/update_stok`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: u.id,
-            stok: u.stok
-          })
-        }).then(r => r.json())
-      )
-    );
+    return await res.json();
+  } catch (err) {
+    console.error('Checkout error:', err);
+    return null;
+  }
+}
+
 
     console.log("Update stok selesai:", results);
     return true;
@@ -1330,18 +1329,31 @@
       status: "status"
     };
 
-    if (!map[name]) return [];
+    const endpoint = map[name];
+    if (!endpoint) return [];
 
-    const res = await fetch(`${SHEET_API}/${map[name]}`);
+    const res = await fetch(`${SHEET_API}/${endpoint}`);
     if (!res.ok) return [];
 
     const data = await res.json();
-    return data?.results || [];   
+
+    // Produk & bundle → array results
+    if (name === "produk" || name === "bundle") {
+      return data?.results || [];
+    }
+
+    // Status → hanya 1 baris, jadi ambil objek pertama
+    if (name === "status") {
+      return (data?.results && data.results.length > 0) ? data.results[0] : null;
+    }
+
+    return [];
   } catch (e) {
-    console.error("fetchSheet error", e);
+    console.error("fetchSheet error:", e);
     return [];
   }
 }
+
 
 
    async function loadAllData() {
