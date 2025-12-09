@@ -1148,46 +1148,27 @@
       }
     }
     
-    async function updateStockAPI(cart, products) {
+    async function updateStockAPI(cart) {
   try {
-    // --- Kumpulkan semua perubahan stok ---
-    const updates = cart.map(item => {
-      const product = products.find(p => p.id == item.id);
-      if (!product) return null;
+    const updates = cart.map(item => ({
+      row_id: item.id,         // harus row_id
+      fields: { stok: item.sisaStok } // harus fields:{}
+    }));
 
-      return {
-        table: "produk",
-        row_id: product.row_id,        // WAJIB row_id dari worker baserow
-        fields: { stok: item.sisaStok }
-      };
-    }).filter(Boolean);
-
-    console.log(">>> STOCK UPDATES TO SEND:", updates);
-
-    // --- Kirim sekaligus ke worker ---
-    const res = await fetch(`${SHEET_API}/update_stok`, {
+    const response = await fetch(`${SHEET_API}/update_stok`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ updates })
     });
 
-    const data = await res.json();
-    return data;
-
-  } catch (e) {
-    console.error("Stock update error:", e);
-    return null;
-  }
-}
-
-
-    console.log("Update stok selesai:", results);
-    return true;
+    return await response.json();
   } catch (err) {
-    console.error("Gagal update stok:", err);
-    return false;
+    console.error("updateStockAPI error:", err);
+    return { error: true };
   }
 }
+
+
 
     function showCustomerForm(){
       return new Promise(resolve=>{
@@ -1514,4 +1495,5 @@
   </script>
 </body>
 </html>
+
 
