@@ -1101,9 +1101,32 @@
       btn.disabled = true;
 
       try{
-        const stockResult = await updateStockAPI(cart);
-        if(!stockResult.success){
-          throw new Error(stockResult.message || 'Stok tidak cukup');
+        // Validasi dan update stok untuk produk non-bundle
+        for(const item of cart){
+          if(!item.isBundle){
+            const product = ALL_PRODUCTS.find(p => p.id === item.id);
+            if(!product){
+              throw new Error(`Produk ${item.name} tidak ditemukan`);
+            }
+            if(product.stok < item.qty){
+              throw new Error(`Stok ${item.name} tidak cukup (tersisa: ${product.stok})`);
+            }
+            
+            // Update stok
+            const newStok = product.stok - item.qty;
+            const updateRes = await fetch(`${SHEET_API}/update_stok`, {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({
+                id: item.id,
+                stok: newStok
+              })
+            });
+            
+            if(!updateRes.ok){
+              throw new Error(`Gagal update stok ${item.name}`);
+            }
+          }
         }
         
         const payload = {
@@ -1502,3 +1525,4 @@
   </script>
 </body>
 </html>
+
