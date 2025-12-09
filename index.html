@@ -1151,21 +1151,28 @@
     async function updateStockAPI(cart) {
   try {
     const updates = cart.map(item => ({
-      row_id: item.row_id,           // harus row_id Baserow
-      fields: { stok: item.sisaStok } // kolom "stok" Baserow
+      id: item.id,
+      stok: item.sisaStok
     }));
 
-    const res = await fetch(`${SHEET_API}/update_stok`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ updates })
-    });
+    const results = await Promise.all(
+      updates.map(u =>
+        fetch(`${SHEET_API}/update_stok`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: u.id,
+            stok: u.stok
+          })
+        }).then(r => r.json())
+      )
+    );
 
-    return await res.json();  // { success: true, results: [...] }
-    
-  } catch (e) {
-    console.error("updateStockAPI error", e);
-    return { success: false, message: "Update stok gagal" };
+    console.log("Update stok selesai:", results);
+    return true;
+  } catch (err) {
+    console.error("Gagal update stok:", err);
+    return false;
   }
 }
 
@@ -1495,5 +1502,3 @@
   </script>
 </body>
 </html>
-
-
