@@ -17,6 +17,7 @@
       --promo-red:#e11d48;
       --bundle-orange:#f59e0b;
       --success-green:#10b981;
+      --out-of-stock:#ef4444;
     }
     *{box-sizing:border-box;margin:0;padding:0}
     body{
@@ -124,6 +125,16 @@
     }
     .badge.promo{background:var(--promo-red)}
     .badge.bundle{background:var(--bundle-orange)}
+    .badge.out-of-stock{background:var(--out-of-stock)}
+    
+    .badge.promo-duration{
+      top:auto;
+      bottom:8px;
+      left:8px;
+      background:rgba(0,0,0,0.75);
+      font-size:10px;
+      padding:3px 7px;
+    }
 
     .price-wrapper{display:flex;flex-direction:column;gap:2px}
     .price-original{
@@ -178,8 +189,16 @@
     .product-card{
       background:white;border-radius:16px;overflow:hidden;
       box-shadow:var(--shadow);cursor:pointer;transition:transform 0.2s;
+      position:relative;
     }
     .product-card:active{transform:scale(0.98)}
+    .product-card.unavailable{
+      opacity:0.6;
+    }
+    .product-card.unavailable .product-image{
+      filter:grayscale(50%);
+    }
+    
     .product-image{
       width:100%;aspect-ratio:1;background:linear-gradient(135deg,#F0F4F8,#E8EFF7);
       display:flex;align-items:center;justify-content:center;overflow:hidden;
@@ -202,6 +221,11 @@
       cursor:pointer;
     }
     .add-btn:active{background:var(--primary-dark)}
+    .add-btn:disabled{
+      background:var(--text-muted);
+      cursor:not-allowed;
+      opacity:0.6;
+    }
 
     .bundle-items{
       font-size:11px;
@@ -345,6 +369,11 @@
       flex:1;padding:12px;background:var(--primary);color:white;
       border:none;border-radius:12px;font-weight:700;cursor:pointer;
     }
+    .btn-add-cart:disabled{
+      background:var(--text-muted);
+      cursor:not-allowed;
+      opacity:0.6;
+    }
 
     .form-group{margin-bottom:16px}
     .form-label{display:block;margin-bottom:6px;font-size:14px;font-weight:600}
@@ -480,7 +509,6 @@
       return 'Rp ' + Number(num).toLocaleString('id-ID');
     }
 
-    // Parse multiple images from comma-separated string
     function parseImages(imageStr){
       if(!imageStr) return [];
       
@@ -497,7 +525,6 @@
       });
     }
 
-    // Create Image Carousel HTML
     function createImageCarousel(images, altText){
       if(!images || images.length === 0){
         return '<div style="color:var(--text-muted);font-size:12px">No Image</div>';
@@ -531,7 +558,6 @@
       return html;
     }
 
-    // Initialize Carousel Interactions
     function initCarousel(container){
       const carousel = container.querySelector('.image-carousel');
       if(!carousel) return;
@@ -686,6 +712,18 @@
       return isNaN(date.getTime()) ? null : date;
     }
 
+    function getPromoRemainingDays(endDateStr){
+      const now = new Date();
+      now.setHours(0,0,0,0);
+      const end = parseDate(endDateStr);
+      if(!end) return null;
+      end.setHours(23,59,59,999);
+      
+      const diffTime = end - now;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays > 0 ? diffDays : 0;
+    }
+
     function isPromoActive(product){
       if(!product.aktif_diskon || product.aktif_diskon.toString().toUpperCase() !== 'TRUE') return false;
       if(!product.harga_diskon || product.harga_diskon <= 0) return false;
@@ -704,6 +742,7 @@
     }
 
     function isBundlePromoActive(bundle){
+      if(!bundle.bundle_promo_aktif || bundle.bundle_promo_aktif.toString().toUpperCase() !== 'TRUE') return false;
       if(!bundle.bundle_promo_mulai || !bundle.bundle_promo_selesai) return false;
       
       const now = new Date();
@@ -718,6 +757,17 @@
       return now >= start && now <= end;
     }
 
+    function isBundleAvailable(bundle){
+      if(!bundle.bundle_stok || bundle.bundle_stok <= 0) return false;
+      
+      for(let productId of bundle.produk_ids){
+        const product = ALL_PRODUCTS.find(p => p.id === productId);
+        if(!product || product.stok <= 0) return false;
+      }
+      
+      return true;
+    }
+
     function getDiscountPercent(harga, harga_diskon){
       return Math.round(((harga - harga_diskon) / harga) * 100);
     }
@@ -727,14 +777,19 @@
       const promoBundles = [];
       const normalBundles = [];
       const normalProducts = [];
+      const unavailableBundles = [];
       
       products.forEach(p=>{
         if(p.isBundle){
-          if(isBundlePromoActive(p)){
-            const percent = p.harga_bundle_original ? getDiscountPercent(p.harga_bundle_original, p.harga_bundle) : 0;
+          const available = isBundleAvailable(p);
+          if(!available){
+            unavailableBundles.push(p);
+          } else if(isBundlePromoActive(p)){
+            const percent = p.harga_produk_total ? getDiscountPercent(p.harga_produk_total, p.harga_bundle) : 0;
             promoBundles.push({...p, discountPercent: percent});
           } else {
-            normalBundles.push(p);
+            const percent = p.harga_produk_total ? getDiscountPercent(p.harga_produk_total, p.harga_bundle) : 0;
+            normalBundles.push({...p, discountPercent: percent});
           }
         } else {
           if(isPromoActive(p)){
@@ -748,8 +803,9 @@
       
       promoProducts.sort((a,b) => b.discountPercent - a.discountPercent);
       promoBundles.sort((a,b) => b.discountPercent - a.discountPercent);
+      normalBundles.sort((a,b) => b.discountPercent - a.discountPercent);
       
-      return [...promoProducts, ...promoBundles, ...normalBundles, ...normalProducts];
+      return [...promoProducts, ...promoBundles, ...normalBundles, ...normalProducts, ...unavailableBundles];
     }
 
     function setSkeleton(){
@@ -805,24 +861,39 @@
       }
       chunk.forEach(p=>{
         const card = document.createElement('div');
-        card.className = 'product-card';
+        const isUnavailable = p.isBundle && !isBundleAvailable(p);
+        card.className = 'product-card' + (isUnavailable ? ' unavailable' : '');
         
         const images = parseImages(p.gambar);
         const firstImage = images.length > 0 ? images[0] : '';
         const imgHtml = firstImage ? `<img src="${firstImage}" alt="${p.nama}">` : '<div style="color:var(--text-muted);font-size:12px">No Image</div>';
         
         let badgeHtml = '';
+        let promoDurationBadgeHtml = '';
         let priceHtml = '';
         
         if(p.isBundle){
+          const available = isBundleAvailable(p);
           const bundlePromoActive = isBundlePromoActive(p);
-          if(bundlePromoActive && p.harga_bundle_original){
-            const percent = getDiscountPercent(p.harga_bundle_original, p.harga_bundle);
-            badgeHtml = `<div class="badge promo">-${percent}%</div>`;
-            priceHtml = `<div class="price-wrapper"><div class="price-original">${formatRp(p.harga_bundle_original)}</div><div class="price-promo">${formatRp(p.harga_bundle)}</div></div>`;
+          
+          if(!available){
+            badgeHtml = '<div class="badge out-of-stock">STOK HABIS</div>';
+          }
+          
+          if(p.harga_produk_total && p.harga_produk_total > p.harga_bundle){
+            const percent = getDiscountPercent(p.harga_produk_total, p.harga_bundle);
+            if(!badgeHtml) badgeHtml = `<div class="badge bundle">-${percent}%</div>`;
+            priceHtml = `<div class="price-wrapper"><div class="price-original">${formatRp(p.harga_produk_total)}</div><div class="price-promo">${formatRp(p.harga_bundle)}</div></div>`;
           } else {
-            badgeHtml = '<div class="badge bundle">PAKET</div>';
+            if(!badgeHtml) badgeHtml = '<div class="badge bundle">PAKET</div>';
             priceHtml = `<div class="price-normal">${formatRp(p.harga_bundle)}</div>`;
+          }
+          
+          if(bundlePromoActive && p.bundle_promo_selesai){
+            const remainingDays = getPromoRemainingDays(p.bundle_promo_selesai);
+            if(remainingDays !== null && remainingDays > 0){
+              promoDurationBadgeHtml = `<div class="badge promo-duration">⏰ Sisa ${remainingDays} hari</div>`;
+            }
           }
         } else {
           const promoActive = isPromoActive(p);
@@ -830,6 +901,13 @@
             const percent = getDiscountPercent(p.harga, p.harga_diskon);
             badgeHtml = `<div class="badge promo">-${percent}%</div>`;
             priceHtml = `<div class="price-wrapper"><div class="price-original">${formatRp(p.harga)}</div><div class="price-promo">${formatRp(p.harga_diskon)}</div></div>`;
+            
+            if(p.promo_selesai){
+              const remainingDays = getPromoRemainingDays(p.promo_selesai);
+              if(remainingDays !== null && remainingDays > 0){
+                promoDurationBadgeHtml = `<div class="badge promo-duration">⏰ Sisa ${remainingDays} hari</div>`;
+              }
+            }
           } else {
             priceHtml = `<div class="price-normal">${formatRp(p.harga)}</div>`;
           }
@@ -838,9 +916,13 @@
         const bundleItemsHtml = p.isBundle && p.bundleItems ? `<div class="bundle-items">Isi: ${p.bundleItems}</div>` : '';
         const multiImageIndicator = images.length > 1 ? `<div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.6);color:white;padding:4px 8px;border-radius:12px;font-size:11px;font-weight:600">📷 ${images.length}</div>` : '';
 
+        const btnDisabled = isUnavailable ? 'disabled' : '';
+        const stockDisplay = p.isBundle ? `Stok: ${p.bundle_stok || 0}` : `Stok: ${p.stok}`;
+
         card.innerHTML = `
           <div class="product-image">
             ${badgeHtml}
+            ${promoDurationBadgeHtml}
             ${imgHtml}
             ${multiImageIndicator}
           </div>
@@ -854,17 +936,23 @@
                 <div class="product-unit">${p.satuan||'paket'}</div>
               </div>
               <div style="text-align:right">
-                ${!p.isBundle ? `<div class="product-stock">Stok: ${p.stok}</div>` : ''}
-                <button class="add-btn" data-id="${p.id}" data-bundle="${p.isBundle||false}">+ Keranjang</button>
+                <div class="product-stock">${stockDisplay}</div>
+                <button class="add-btn" data-id="${p.id}" data-bundle="${p.isBundle||false}" ${btnDisabled}>+ Keranjang</button>
               </div>
             </div>
           </div>
         `;
-        card.querySelector('.product-image').addEventListener('click', ()=>openProductModal(p.id, p.isBundle));
-        card.querySelector('.product-name').addEventListener('click', ()=>openProductModal(p.id, p.isBundle));
+        
+        if(!isUnavailable){
+          card.querySelector('.product-image').addEventListener('click', ()=>openProductModal(p.id, p.isBundle));
+          card.querySelector('.product-name').addEventListener('click', ()=>openProductModal(p.id, p.isBundle));
+        }
+        
         card.querySelector('.add-btn').addEventListener('click', (e)=>{
           e.stopPropagation();
-          addToCart(p.id, 1, p.isBundle);
+          if(!isUnavailable){
+            addToCart(p.id, 1, p.isBundle);
+          }
         });
         grid.appendChild(card);
       });
@@ -877,7 +965,20 @@
       const item = isBundle ? ALL_BUNDLES.find(x=>x.id===id) : ALL_PRODUCTS.find(x=>x.id===id);
       if(!item) return alert('Produk tidak ditemukan');
       
-      if(!isBundle){
+      if(isBundle){
+        if(!isBundleAvailable(item)){
+          return alert('Paket tidak tersedia. Salah satu produk di dalam paket stoknya habis.');
+        }
+        if(item.bundle_stok <= 0) return alert('Stok paket habis');
+        if(qty > item.bundle_stok) return alert('Jumlah melebihi stok paket');
+        
+        for(let productId of item.produk_ids){
+          const product = ALL_PRODUCTS.find(p => p.id === productId);
+          if(!product || product.stok <= 0){
+            return alert(`Produk ${product?.nama || 'dalam paket'} stoknya habis`);
+          }
+        }
+      } else {
         if(item.stok === 0) return alert('Stok habis');
         if(qty > item.stok) return alert('Stok tidak cukup');
       }
@@ -894,7 +995,8 @@
       }
       
       if(cartItem){
-        if(!isBundle && cartItem.qty + qty > item.stok) return alert('Jumlah melebihi stok');
+        const maxQty = isBundle ? item.bundle_stok : item.stok;
+        if(cartItem.qty + qty > maxQty) return alert('Jumlah melebihi stok');
         cartItem.qty += qty;
       } else {
         const images = parseImages(item.gambar);
@@ -905,7 +1007,8 @@
           qty,
           unit: item.satuan || 'paket',
           isBundle: isBundle || false,
-          image: images.length > 0 ? images[0] : ''
+          image: images.length > 0 ? images[0] : '',
+          produk_ids: isBundle ? item.produk_ids : null
         });
       }
       saveCart(cart);
@@ -972,25 +1075,36 @@
       let promoInfoHtml = '';
       let stockHtml = '';
       let qtyInputHtml = '';
+      let isUnavailable = false;
       
       if(isBundle){
-        const bundlePromoActive = item.bundle_promo_mulai && item.bundle_promo_selesai && isBundlePromoActive(item);
-        if(bundlePromoActive && item.harga_bundle_original){
-          const percent = getDiscountPercent(item.harga_bundle_original, item.harga_bundle);
-          badgeHtml = `<div class="badge promo">-${percent}%</div>`;
-          priceHtml = `<div><div class="modal-price-original">${formatRp(item.harga_bundle_original)}</div><div class="modal-price-promo">${formatRp(item.harga_bundle)}</div></div>`;
-          
-          const endDate = parseDate(item.bundle_promo_selesai);
-          if(endDate){
-            const options = { day: 'numeric', month: 'long', year: 'numeric' };
-            promoInfoHtml = `<div class="modal-promo-info">⏰ Promo sampai: ${endDate.toLocaleDateString('id-ID', options)}</div>`;
-          }
+        isUnavailable = !isBundleAvailable(item);
+        const bundlePromoActive = isBundlePromoActive(item);
+        
+        if(isUnavailable){
+          badgeHtml = '<div class="badge out-of-stock">STOK HABIS</div>';
+        }
+        
+        if(item.harga_produk_total && item.harga_produk_total > item.harga_bundle){
+          const percent = getDiscountPercent(item.harga_produk_total, item.harga_bundle);
+          if(!badgeHtml) badgeHtml = `<div class="badge bundle">-${percent}%</div>`;
+          priceHtml = `<div><div class="modal-price-original">${formatRp(item.harga_produk_total)}</div><div class="modal-price-promo">${formatRp(item.harga_bundle)}</div></div>`;
         } else {
-          badgeHtml = '<div class="badge bundle">PAKET</div>';
+          if(!badgeHtml) badgeHtml = '<div class="badge bundle">PAKET</div>';
           priceHtml = `<div class="modal-price">${formatRp(item.harga_bundle)}</div>`;
         }
-        stockHtml = item.bundle_stok ? `<div class="modal-stock">Stok: ${item.bundle_stok}</div>` : '';
-        qtyInputHtml = `<input type="number" class="qty-input" id="modalQty" min="1" ${item.bundle_stok ? `max="${item.bundle_stok}"` : ''} value="1">`;
+        
+        if(bundlePromoActive && item.bundle_promo_selesai){
+          const remainingDays = getPromoRemainingDays(item.bundle_promo_selesai);
+          if(remainingDays !== null && remainingDays > 0){
+            const endDate = parseDate(item.bundle_promo_selesai);
+            const options = { day: 'numeric', month: 'long', year: 'numeric' };
+            promoInfoHtml = `<div class="modal-promo-info">⏰ Promo sampai: ${endDate.toLocaleDateString('id-ID', options)} (Sisa ${remainingDays} hari)</div>`;
+          }
+        }
+        
+        stockHtml = `<div class="modal-stock">Stok Paket: ${item.bundle_stok || 0}</div>`;
+        qtyInputHtml = `<input type="number" class="qty-input" id="modalQty" min="1" max="${item.bundle_stok || 0}" value="1" ${isUnavailable ? 'disabled' : ''}>`;
       } else {
         const promoActive = isPromoActive(item);
         if(promoActive){
@@ -998,10 +1112,13 @@
           badgeHtml = `<div class="badge promo">-${percent}%</div>`;
           priceHtml = `<div><div class="modal-price-original">${formatRp(item.harga)}</div><div class="modal-price-promo">${formatRp(item.harga_diskon)}</div></div>`;
           
-          const endDate = parseDate(item.promo_selesai);
-          if(endDate){
-            const options = { day: 'numeric', month: 'long', year: 'numeric' };
-            promoInfoHtml = `<div class="modal-promo-info">⏰ Promo sampai: ${endDate.toLocaleDateString('id-ID', options)}</div>`;
+          if(item.promo_selesai){
+            const remainingDays = getPromoRemainingDays(item.promo_selesai);
+            if(remainingDays !== null && remainingDays > 0){
+              const endDate = parseDate(item.promo_selesai);
+              const options = { day: 'numeric', month: 'long', year: 'numeric' };
+              promoInfoHtml = `<div class="modal-promo-info">⏰ Promo sampai: ${endDate.toLocaleDateString('id-ID', options)} (Sisa ${remainingDays} hari)</div>`;
+            }
           }
         } else {
           priceHtml = `<div class="modal-price">${formatRp(item.harga)}</div>`;
@@ -1034,7 +1151,7 @@
           ${promoInfoHtml}
           <div class="modal-add-section">
             ${qtyInputHtml}
-            <button class="btn-add-cart" id="modalAddBtn">Tambah ke Keranjang</button>
+            <button class="btn-add-cart" id="modalAddBtn" ${isUnavailable ? 'disabled' : ''}>Tambah ke Keranjang</button>
           </div>
         </div>
       `;
@@ -1048,9 +1165,11 @@
       
       document.getElementById('closeProductModal').addEventListener('click', ()=>closeModal('productModal'));
       document.getElementById('modalAddBtn').addEventListener('click', ()=>{
-        const qty = parseInt(document.getElementById('modalQty').value)||1;
-        addToCart(item.id, qty, isBundle);
-        closeModal('productModal');
+        if(!isUnavailable){
+          const qty = parseInt(document.getElementById('modalQty').value)||1;
+          addToCart(item.id, qty, isBundle);
+          closeModal('productModal');
+        }
       });
       document.getElementById('productModal').classList.add('show');
     }
@@ -1101,33 +1220,108 @@
       btn.disabled = true;
 
       try{
-        // Validasi dan update stok untuk produk non-bundle
-        for(const item of cart){
-          if(!item.isBundle){
-            const product = ALL_PRODUCTS.find(p => p.id === item.id);
+        // Validasi stok untuk semua item
+        for(const cartItem of cart){
+          if(cartItem.isBundle){
+            const bundle = ALL_BUNDLES.find(b => b.id === cartItem.id);
+            if(!bundle){
+              throw new Error(`Paket ${cartItem.name} tidak ditemukan`);
+            }
+            if(bundle.bundle_stok < cartItem.qty){
+              throw new Error(`Stok paket ${cartItem.name} tidak cukup (tersisa: ${bundle.bundle_stok})`);
+            }
+            
+            // Validasi stok produk di dalam bundle
+            for(let productId of bundle.produk_ids){
+              const product = ALL_PRODUCTS.find(p => p.id === productId);
+              if(!product){
+                throw new Error(`Produk dalam paket ${cartItem.name} tidak ditemukan`);
+              }
+              if(product.stok < cartItem.qty){
+                throw new Error(`Stok ${product.nama} dalam paket tidak cukup (tersisa: ${product.stok})`);
+              }
+            }
+          } else {
+            const product = ALL_PRODUCTS.find(p => p.id === cartItem.id);
             if(!product){
-              throw new Error(`Produk ${item.name} tidak ditemukan`);
+              throw new Error(`Produk ${cartItem.name} tidak ditemukan`);
             }
-            if(product.stok < item.qty){
-              throw new Error(`Stok ${item.name} tidak cukup (tersisa: ${product.stok})`);
-            }
-            
-            // Update stok
-            const newStok = product.stok - item.qty;
-            const updateRes = await fetch(`${SHEET_API}/update_stok`, {
-              method: 'POST',
-              headers: {'Content-Type': 'application/json'},
-              body: JSON.stringify({
-                id: item.id,
-                stok: newStok
-              })
-            });
-            
-            if(!updateRes.ok){
-              throw new Error(`Gagal update stok ${item.name}`);
+            if(product.stok < cartItem.qty){
+              throw new Error(`Stok ${cartItem.name} tidak cukup (tersisa: ${product.stok})`);
             }
           }
         }
+        
+        btn.textContent = '⏳ Mengupdate stok...';
+        
+        // Update stok untuk semua item
+        const productUpdates = [];
+        const bundleUpdates = [];
+        
+        for(const cartItem of cart){
+          if(cartItem.isBundle){
+            const bundle = ALL_BUNDLES.find(b => b.id === cartItem.id);
+            const newBundleStok = bundle.bundle_stok - cartItem.qty;
+            bundleUpdates.push({
+              id: cartItem.id,
+              stok: newBundleStok
+            });
+            
+            // Update stok produk di dalam bundle
+            for(let productId of bundle.produk_ids){
+              const product = ALL_PRODUCTS.find(p => p.id === productId);
+              const newStok = product.stok - cartItem.qty;
+              productUpdates.push({
+                id: productId,
+                stok: newStok
+              });
+            }
+          } else {
+            const product = ALL_PRODUCTS.find(p => p.id === cartItem.id);
+            const newStok = product.stok - cartItem.qty;
+            productUpdates.push({
+              id: cartItem.id,
+              stok: newStok
+            });
+          }
+        }
+        
+        // Batch update product stocks
+        if(productUpdates.length > 0){
+          const batchRes = await fetch(`${SHEET_API}/batch_update_stok`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ updates: productUpdates })
+          });
+          
+          if(!batchRes.ok){
+            throw new Error('Gagal update stok produk');
+          }
+          
+          const batchData = await batchRes.json();
+          if(!batchData.success){
+            throw new Error('Gagal update stok produk');
+          }
+        }
+        
+        // Update bundle stocks
+        for(const bundleUpdate of bundleUpdates){
+          const bundleId = bundleUpdate.id.replace('bundle_', '');
+          const bundleRes = await fetch(`${SHEET_API}/update_bundle_stok`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+              id: bundleId,
+              stok: bundleUpdate.stok
+            })
+          });
+          
+          if(!bundleRes.ok){
+            throw new Error(`Gagal update stok paket`);
+          }
+        }
+        
+        btn.textContent = '⏳ Mengirim pesanan...';
         
         const payload = {
           customer: {
@@ -1143,7 +1337,6 @@
           note
         };
         
-        btn.textContent = '⏳ Mengirim pesanan...';
         const res = await fetch(CLOUDFLARE_WORKER_URL, {
           method:'POST',
           headers:{'Content-Type':'application/json'},
@@ -1170,35 +1363,6 @@
         btn.disabled = false;
       }
     }
-    
-    async function updateStockAPI(cart) {
-  try {
-    const updates = cart.map(item => ({
-      id: item.id,
-      stok: item.sisaStok
-    }));
-
-    const results = await Promise.all(
-      updates.map(u =>
-        fetch(`${SHEET_API}/update_stok`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: u.id,
-            stok: u.stok
-          })
-        }).then(r => r.json())
-      )
-    );
-
-    console.log("Update stok selesai:", results);
-    return true;
-  } catch (err) {
-    console.error("Gagal update stok:", err);
-    return false;
-  }
-}
-
 
     function showCustomerForm(){
       return new Promise(resolve=>{
@@ -1346,48 +1510,46 @@
       });
     }
 
-  async function fetchSheet(name) {
-  try {
-    const map = {
-      produk: "produk",
-      bundle: "bundle",
-      status: "status"
-    };
+    async function fetchSheet(name) {
+      try {
+        const map = {
+          produk: "produk",
+          bundle: "bundle",
+          status: "status"
+        };
 
-    if (!map[name]) return [];
+        if (!map[name]) return [];
 
-    const res = await fetch(`${SHEET_API}/${map[name]}`);
-    if (!res.ok) return [];
+        const res = await fetch(`${SHEET_API}/${map[name]}`);
+        if (!res.ok) return [];
 
-    const data = await res.json();
-    return data?.results || [];   
-  } catch (e) {
-    console.error("fetchSheet error", e);
-    return [];
-  }
-}
+        const data = await res.json();
+        return data?.results || [];   
+      } catch (e) {
+        console.error("fetchSheet error", e);
+        return [];
+      }
+    }
 
+    async function loadAllData() {
+      try {
+        const [produk, bundle, status] = await Promise.all([
+          fetchSheet("produk"),
+          fetchSheet("bundle"),
+          fetchSheet("status")
+        ]);
 
-   async function loadAllData() {
-  try {
-    const [produk, bundle, status] = await Promise.all([
-      fetchSheet("produk"),
-      fetchSheet("bundle"),
-      fetchSheet("status")
-    ]);
+        return {
+          produk: produk || [],
+          bundle: bundle || [],
+          status: status && status.length > 0 ? status[0] : null
+        };
 
-    return {
-      produk: produk || [],
-      bundle: bundle || [],
-      status: status && status.length > 0 ? status[0] : null
-    };
-
-  } catch (err) {
-    console.error("Error loadAllData:", err);
-    return { produk: [], bundle: [], status: null };
-  }
-}
-
+      } catch (err) {
+        console.error("Error loadAllData:", err);
+        return { produk: [], bundle: [], status: null };
+      }
+    }
 
     function updateStoreStatusBanner(status){
       const banner = document.getElementById('storeStatusBanner');
@@ -1443,19 +1605,11 @@
           
           const firstProduct = ALL_PRODUCTS.find(x=>x.id===prodIds[0]);
           
-          const hasPromo = b.bundle_promo_mulai && b.bundle_promo_selesai;
-          let finalPrice = Number(b.harga_bundle||b.harga||0);
-          let originalPrice = null;
-          
-          if(hasPromo && b.harga_bundle_original){
-            originalPrice = Number(b.harga_bundle_original);
-          }
-          
           return {
             id: 'bundle_' + String(b.bundle_id || b.id),
             nama: b.bundle_nama || b.nama || 'Paket Bundle',
-            harga_bundle: finalPrice,
-            harga_bundle_original: originalPrice,
+            harga_produk_total: Number(b.harga_produk_total || 0),
+            harga_bundle: Number(b.harga_bundle || b.harga || 0),
             produk_ids: prodIds,
             bundleItems: items.length > 0 ? items.join(', ') : 'Paket Hemat',
             gambar: b.bundle_gambar || b.gambar || firstProduct?.gambar || '',
@@ -1465,6 +1619,7 @@
             bundle_stok: Number(b.bundle_stok || 0),
             bundle_promo_mulai: b.bundle_promo_mulai || null,
             bundle_promo_selesai: b.bundle_promo_selesai || null,
+            bundle_promo_aktif: b.bundle_promo_aktif || 'FALSE',
             isBundle: true
           };
         }).filter(b => b.harga_bundle > 0);
@@ -1525,4 +1680,3 @@
   </script>
 </body>
 </html>
-
