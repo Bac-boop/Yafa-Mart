@@ -1000,7 +1000,7 @@
         cartItem.qty += qty;
       } else {
         const images = parseImages(item.gambar);
-        cart.push({
+        const newCartItem = {
           id,
           name: item.nama,
           price: finalPrice,
@@ -1009,7 +1009,14 @@
           isBundle: isBundle || false,
           image: images.length > 0 ? images[0] : '',
           produk_ids: isBundle ? item.produk_ids : null
-        });
+        };
+        
+        // Tambahkan baserow_id untuk bundle
+        if(isBundle && item.baserow_id){
+          newCartItem.baserow_id = item.baserow_id;
+        }
+        
+        cart.push(newCartItem);
       }
       saveCart(cart);
     }
@@ -1261,15 +1268,22 @@
         for(const cartItem of cart){
           if(cartItem.isBundle){
             const bundle = ALL_BUNDLES.find(b => b.id === cartItem.id);
+            if(!bundle){
+              throw new Error(`Bundle ${cartItem.name} tidak ditemukan`);
+            }
+            
             const newBundleStok = bundle.bundle_stok - cartItem.qty;
             bundleUpdates.push({
-              id: cartItem.id,
+              baserow_id: cartItem.baserow_id || bundle.baserow_id, // Gunakan baserow_id dari cart atau bundle
               stok: newBundleStok
             });
             
             // Update stok produk di dalam bundle
             for(let productId of bundle.produk_ids){
               const product = ALL_PRODUCTS.find(p => p.id === productId);
+              if(!product){
+                throw new Error(`Produk dalam bundle ${cartItem.name} tidak ditemukan`);
+              }
               const newStok = product.stok - cartItem.qty;
               productUpdates.push({
                 id: productId,
@@ -1278,6 +1292,9 @@
             }
           } else {
             const product = ALL_PRODUCTS.find(p => p.id === cartItem.id);
+            if(!product){
+              throw new Error(`Produk ${cartItem.name} tidak ditemukan`);
+            }
             const newStok = product.stok - cartItem.qty;
             productUpdates.push({
               id: cartItem.id,
@@ -1306,18 +1323,34 @@
         
         // Update bundle stocks
         for(const bundleUpdate of bundleUpdates){
-          const bundleId = bundleUpdate.id.replace('bundle_', '');
+          console.log('Updating bundle with baserow_id:', bundleUpdate.baserow_id, 'new stok:', bundleUpdate.stok);
+          
+          if(!bundleUpdate.baserow_id){
+            throw new Error('Bundle tidak memiliki baserow_id untuk update');
+          }
+          
           const bundleRes = await fetch(`${SHEET_API}/update_bundle_stok`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
-              id: bundleId,
+              id: bundleUpdate.baserow_id, // Gunakan baserow_id
               stok: bundleUpdate.stok
             })
           });
           
+          console.log('Bundle update response status:', bundleRes.status);
+          
           if(!bundleRes.ok){
-            throw new Error(`Gagal update stok paket`);
+            const errData = await bundleRes.json().catch(() => ({}));
+            console.error('Bundle update error:', errData);
+            throw new Error(`Gagal update stok paket: ${errData.message || bundleRes.statusText}`);
+          }
+          
+          const bundleData = await bundleRes.json();
+          console.log('Bundle update result:', bundleData);
+          
+          if(!bundleData.success){
+            throw new Error(`Gagal update stok paket: ${bundleData.message || 'Unknown error'}`);
           }
         }
         
@@ -1605,8 +1638,10 @@
           
           const firstProduct = ALL_PRODUCTS.find(x=>x.id===prodIds[0]);
           
-          return {
+          const bundleData = {
             id: 'bundle_' + String(b.bundle_id || b.id),
+            baserow_id: b.id, // ROW ID dari Baserow (untuk update)
+            bundle_id: String(b.bundle_id || b.id), // Bundle ID user-defined
             nama: b.bundle_nama || b.nama || 'Paket Bundle',
             harga_produk_total: Number(b.harga_produk_total || 0),
             harga_bundle: Number(b.harga_bundle || b.harga || 0),
@@ -1622,6 +1657,9 @@
             bundle_promo_aktif: b.bundle_promo_aktif || 'FALSE',
             isBundle: true
           };
+          
+          console.log('Bundle loaded:', bundleData.nama, 'baserow_id:', bundleData.baserow_id);
+          return bundleData;
         }).filter(b => b.harga_bundle > 0);
         
         FILTERED_PRODUCTS = [...ALL_PRODUCTS, ...ALL_BUNDLES];
