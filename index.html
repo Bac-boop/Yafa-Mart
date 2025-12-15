@@ -45,9 +45,7 @@
       padding:8px 10px;border-radius:10px;border:1px solid var(--border);
       min-width:0;
     }
-    .search-box svg{
-      flex-shrink:0;
-    }
+    .search-box svg{flex-shrink:0}
     .search-box input{
       flex:1;border:none;background:transparent;font-size:13px;outline:none;color:var(--text);
       min-width:0;
@@ -58,100 +56,51 @@
       display:flex;align-items:center;gap:3px;padding:8px 10px;
       background:white;border:1.5px solid var(--primary);border-radius:10px;
       color:var(--primary);font-weight:600;font-size:13px;cursor:pointer;
-      flex-shrink:0;
-      white-space:nowrap;
+      flex-shrink:0;white-space:nowrap;
     }
-    .filter-btn svg{
-      flex-shrink:0;
-    }
+    .filter-btn svg{flex-shrink:0}
     .filter-btn.active{background:var(--primary);color:white}
     
     .cart-header-btn{
-      position:relative;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:8px 10px;
-      background:var(--primary);
-      border-radius:10px;
-      color:white;
-      cursor:pointer;
-      border:none;
-      flex-shrink:0;
-      font-size:13px;
-      font-weight:600;
-      white-space:nowrap;
+      position:relative;display:flex;align-items:center;justify-content:center;
+      padding:8px 10px;background:var(--primary);border-radius:10px;
+      color:white;cursor:pointer;border:none;flex-shrink:0;
+      font-size:13px;font-weight:600;white-space:nowrap;
     }
     .cart-header-btn:active{background:var(--primary-dark)}
     .cart-header-badge{
-      position:absolute;
-      top:-6px;
-      right:-6px;
-      background:#FF4444;
-      color:white;
-      font-size:10px;
-      font-weight:700;
-      padding:2px 5px;
-      border-radius:10px;
-      min-width:18px;
-      text-align:center;
+      position:absolute;top:-6px;right:-6px;background:#FF4444;
+      color:white;font-size:10px;font-weight:700;padding:2px 5px;
+      border-radius:10px;min-width:18px;text-align:center;
     }
 
     .store-status-banner{
-      padding:12px 16px;
-      text-align:center;
-      font-size:14px;
-      font-weight:600;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:8px;
+      padding:12px 16px;text-align:center;font-size:14px;font-weight:600;
+      display:flex;align-items:center;justify-content:center;gap:8px;
     }
     .store-status-banner.open{background:var(--success-green);color:white}
     .store-status-banner.closed{background:#ef4444;color:white}
     .store-status-banner.loading{background:#6b7280;color:white}
 
     .badge{
-      position:absolute;
-      top:8px;
-      left:8px;
-      color:white;
-      padding:4px 8px;
-      border-radius:6px;
-      font-size:11px;
-      font-weight:700;
-      z-index:10;
+      position:absolute;top:8px;left:8px;color:white;padding:4px 8px;
+      border-radius:6px;font-size:11px;font-weight:700;z-index:10;
       box-shadow:0 2px 4px rgba(0,0,0,0.2);
     }
     .badge.promo{background:var(--promo-red)}
     .badge.bundle{background:var(--bundle-orange)}
     .badge.out-of-stock{background:var(--out-of-stock)}
-    
     .badge.promo-duration{
-      top:auto;
-      bottom:8px;
-      left:8px;
-      background:rgba(0,0,0,0.75);
-      font-size:10px;
-      padding:3px 7px;
+      top:auto;bottom:8px;left:8px;background:rgba(0,0,0,0.75);
+      font-size:10px;padding:3px 7px;
     }
 
     .price-wrapper{display:flex;flex-direction:column;gap:2px}
     .price-original{
-      text-decoration:line-through;
-      color:var(--text-muted);
-      font-size:12px;
+      text-decoration:line-through;color:var(--text-muted);font-size:12px;
     }
-    .price-promo{
-      color:var(--promo-red);
-      font-weight:700;
-      font-size:16px;
-    }
-    .price-normal{
-      font-size:16px;
-      font-weight:700;
-      color:var(--primary);
-    }
+    .price-promo{color:var(--promo-red);font-weight:700;font-size:16px}
+    .price-normal{font-size:16px;font-weight:700;color:var(--primary)}
 
     .filter-modal{
       position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;
@@ -183,21 +132,15 @@
     .products-title{font-size:18px;font-weight:700}
     .products-count{font-size:13px;color:var(--text-muted)}
     
-    .products-grid{
-      display:grid;grid-template-columns:repeat(2,1fr);gap:12px;
-    }
+    .products-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
     .product-card{
       background:white;border-radius:16px;overflow:hidden;
       box-shadow:var(--shadow);cursor:pointer;transition:transform 0.2s;
       position:relative;
     }
     .product-card:active{transform:scale(0.98)}
-    .product-card.unavailable{
-      opacity:0.6;
-    }
-    .product-card.unavailable .product-image{
-      filter:grayscale(50%);
-    }
+    .product-card.unavailable{opacity:0.6}
+    .product-card.unavailable .product-image{filter:grayscale(50%)}
     
     .product-image{
       width:100%;aspect-ratio:1;background:linear-gradient(135deg,#F0F4F8,#E8EFF7);
@@ -206,11 +149,15 @@
     }
     .product-image img{width:100%;height:100%;object-fit:cover}
     .product-info{padding:12px}
-    .product-name{font-size:14px;font-weight:600;margin-bottom:4px;
-      overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .product-desc{font-size:12px;color:var(--text-muted);margin-bottom:8px;
+    .product-name{
+      font-size:14px;font-weight:600;margin-bottom:4px;
+      overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    }
+    .product-desc{
+      font-size:12px;color:var(--text-muted);margin-bottom:8px;
       display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
-      overflow:hidden;height:34px}
+      overflow:hidden;height:34px;
+    }
     .product-footer{display:flex;justify-content:space-between;align-items:center}
     .product-price{font-size:16px;font-weight:700;color:var(--primary)}
     .product-unit{font-size:11px;color:var(--text-muted);margin-top:2px}
@@ -222,16 +169,11 @@
     }
     .add-btn:active{background:var(--primary-dark)}
     .add-btn:disabled{
-      background:var(--text-muted);
-      cursor:not-allowed;
-      opacity:0.6;
+      background:var(--text-muted);cursor:not-allowed;opacity:0.6;
     }
 
     .bundle-items{
-      font-size:11px;
-      color:var(--text-muted);
-      margin-bottom:8px;
-      line-height:1.4;
+      font-size:11px;color:var(--text-muted);margin-bottom:8px;line-height:1.4;
     }
 
     .load-more{
@@ -240,9 +182,7 @@
       color:var(--text);font-weight:600;cursor:pointer;
     }
 
-    .cart-fab{
-      position:fixed;bottom:20px;right:20px;z-index:90;
-    }
+    .cart-fab{position:fixed;bottom:20px;right:20px;z-index:90}
     .fab{
       width:60px;height:60px;border-radius:50%;background:var(--primary);
       color:white;border:none;font-size:24px;box-shadow:0 4px 16px rgba(91,156,229,0.3);
@@ -284,6 +224,21 @@
     .cart-item-detail{font-size:13px;color:var(--text-muted)}
     .cart-item-right{text-align:right}
     .cart-item-price{font-size:15px;font-weight:700;color:var(--primary);margin-bottom:6px}
+    .cart-item-qty{
+      display:flex;align-items:center;gap:8px;margin-bottom:6px;
+      justify-content:flex-end;
+    }
+    .qty-btn{
+      width:28px;height:28px;border-radius:6px;border:1.5px solid var(--border);
+      background:white;color:var(--text);font-size:16px;font-weight:700;
+      cursor:pointer;display:flex;align-items:center;justify-content:center;
+      transition:all 0.2s;
+    }
+    .qty-btn:hover{
+      background:var(--bg);border-color:var(--primary);color:var(--primary);
+    }
+    .qty-btn:active{transform:scale(0.9)}
+    .qty-display{font-size:14px;font-weight:600;min-width:30px;text-align:center}
     .cart-remove{font-size:12px;color:#FF4444;cursor:pointer}
     
     .cart-footer{padding:16px;border-top:1px solid var(--border)}
@@ -322,16 +277,14 @@
     .modal-title{font-size:20px;font-weight:700}
     .modal-close{
       width:32px;height:32px;border-radius:50%;border:none;
-      background:var(--bg);color:var(--text);font-size:20px;
-      cursor:pointer;
+      background:var(--bg);color:var(--text);font-size:20px;cursor:pointer;
     }
     .modal-body{padding:20px}
     .modal-image{
       width:100%;aspect-ratio:1;border-radius:16px;overflow:hidden;
       background:linear-gradient(135deg,#F0F4F8,#E8EFF7);
       display:flex;align-items:center;justify-content:center;
-      margin-bottom:16px;
-      position:relative;
+      margin-bottom:16px;position:relative;
     }
     .modal-image img{width:100%;height:100%;object-fit:cover}
     .modal-product-name{font-size:20px;font-weight:700;margin-bottom:8px}
@@ -343,22 +296,13 @@
     .modal-price-wrapper{display:flex;justify-content:space-between;align-items:flex-start}
     .modal-price{font-size:24px;font-weight:700;color:var(--primary)}
     .modal-price-original{
-      text-decoration:line-through;
-      color:var(--text-muted);
-      font-size:16px;
-      margin-bottom:4px;
+      text-decoration:line-through;color:var(--text-muted);
+      font-size:16px;margin-bottom:4px;
     }
-    .modal-price-promo{
-      color:var(--promo-red);
-      font-size:28px;
-      font-weight:700;
-    }
+    .modal-price-promo{color:var(--promo-red);font-size:28px;font-weight:700}
     .modal-stock{font-size:14px;color:var(--text-muted)}
     .modal-promo-info{
-      font-size:13px;
-      color:var(--promo-red);
-      margin-top:8px;
-      font-weight:600;
+      font-size:13px;color:var(--promo-red);margin-top:8px;font-weight:600;
     }
     .modal-add-section{display:flex;gap:10px;align-items:center}
     .qty-input{
@@ -370,9 +314,7 @@
       border:none;border-radius:12px;font-weight:700;cursor:pointer;
     }
     .btn-add-cart:disabled{
-      background:var(--text-muted);
-      cursor:not-allowed;
-      opacity:0.6;
+      background:var(--text-muted);cursor:not-allowed;opacity:0.6;
     }
 
     .form-group{margin-bottom:16px}
@@ -383,6 +325,32 @@
     }
     .form-input:focus{outline:none;border-color:var(--primary)}
     .form-hint{font-size:12px;color:var(--text-muted);margin-top:4px}
+
+    .footer-banner{
+      background:linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color:white;padding:20px 16px;text-align:center;margin-top:24px;
+    }
+    .footer-logo{font-size:20px;font-weight:700;margin-bottom:8px}
+    .footer-tagline{font-size:13px;opacity:0.9;margin-bottom:16px}
+    .footer-social{
+      display:flex;justify-content:center;gap:16px;margin-bottom:16px;
+      flex-wrap:wrap;
+    }
+    .social-link{
+      display:flex;align-items:center;gap:6px;color:white;
+      text-decoration:none;font-size:13px;padding:6px 12px;
+      background:rgba(255,255,255,0.15);border-radius:8px;
+      transition:all 0.2s;
+    }
+    .social-link:hover{
+      background:rgba(255,255,255,0.25);transform:translateY(-2px);
+    }
+    .footer-contact{font-size:12px;opacity:0.8;margin-top:12px}
+    .footer-contact div{margin:4px 0}
+    .footer-copy{
+      font-size:11px;opacity:0.7;margin-top:12px;padding-top:12px;
+      border-top:1px solid rgba(255,255,255,0.2);
+    }
     
     .skeleton{
       background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);
@@ -447,6 +415,33 @@
     </div>
     <div class="products-grid" id="productsGrid"></div>
     <button class="load-more" id="loadMoreBtn" style="display:none">Muat Lebih Banyak</button>
+    
+    <div class="footer-banner">
+      <div class="footer-logo">🛒 Yafa Mart</div>
+      <div class="footer-tagline">Belanja mudah, cepat, dan terpercaya</div>
+      <div class="footer-social">
+        <a href="https://wa.me/6281234567890" class="social-link" target="_blank">
+          <span>📱</span>
+          <span>WhatsApp</span>
+        </a>
+        <a href="https://instagram.com/yafamart" class="social-link" target="_blank">
+          <span>📷</span>
+          <span>Instagram</span>
+        </a>
+        <a href="https://facebook.com/yafamart" class="social-link" target="_blank">
+          <span>👥</span>
+          <span>Facebook</span>
+        </a>
+      </div>
+      <div class="footer-contact">
+        <div>📍 Alamat: Jl. Contoh No. 123, Jakarta</div>
+        <div>📞 Telepon: (021) 1234-5678</div>
+        <div>✉️ Email: info@yafamart.com</div>
+      </div>
+      <div class="footer-copy">
+        © 2025 Yafa Mart. Semua hak dilindungi.
+      </div>
+    </div>
   </div>
 
   <div class="cart-fab">
@@ -511,15 +506,11 @@
 
     function parseImages(imageStr){
       if(!imageStr) return [];
-      
       const urls = String(imageStr).split(',').map(url => url.trim()).filter(Boolean);
-      
       return urls.map(url => {
         if(url.includes('drive.google.com/file/d/')){
           const match = url.match(/\/file\/d\/([^\/]+)/);
-          if(match){
-            return `https://drive.google.com/uc?export=view&id=${match[1]}`;
-          }
+          if(match) return `https://drive.google.com/uc?export=view&id=${match[1]}`;
         }
         return url;
       });
@@ -537,24 +528,20 @@
       let html = '<div class="image-carousel" style="width:100%;height:100%;position:relative;overflow:hidden">';
       html += '<div class="carousel-track" style="display:flex;transition:transform 0.3s ease;height:100%">';
       
-      images.forEach((img, idx) => {
+      images.forEach((img) => {
         html += `<div class="carousel-slide" style="min-width:100%;height:100%;flex-shrink:0"><img src="${img}" alt="${altText}" style="width:100%;height:100%;object-fit:cover"></div>`;
       });
       
       html += '</div>';
       
-      if(images.length > 1){
-        html += '<button class="carousel-prev" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.5);color:white;border:none;border-radius:50%;width:36px;height:36px;font-size:20px;cursor:pointer;z-index:10">‹</button>';
-        html += '<button class="carousel-next" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.5);color:white;border:none;border-radius:50%;width:36px;height:36px;font-size:20px;cursor:pointer;z-index:10">›</button>';
-        
-        html += '<div class="carousel-dots" style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10">';
-        for(let i = 0; i < images.length; i++){
-          html += `<div class="carousel-dot ${i === 0 ? 'active' : ''}" style="width:8px;height:8px;border-radius:50%;background:${i === 0 ? 'white' : 'rgba(255,255,255,0.5)'};cursor:pointer"></div>`;
-        }
-        html += '</div>';
-      }
+      html += '<button class="carousel-prev" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.5);color:white;border:none;border-radius:50%;width:36px;height:36px;font-size:20px;cursor:pointer;z-index:10">‹</button>';
+      html += '<button class="carousel-next" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.5);color:white;border:none;border-radius:50%;width:36px;height:36px;font-size:20px;cursor:pointer;z-index:10">›</button>';
       
-      html += '</div>';
+      html += '<div class="carousel-dots" style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10">';
+      for(let i = 0; i < images.length; i++){
+        html += `<div class="carousel-dot ${i === 0 ? 'active' : ''}" style="width:8px;height:8px;border-radius:50%;background:${i === 0 ? 'white' : 'rgba(255,255,255,0.5)'};cursor:pointer"></div>`;
+      }
+      html += '</div></div>';
       return html;
     }
 
@@ -623,43 +610,10 @@
         if(!isDragging) return;
         const diff = startX - currentX;
         if(Math.abs(diff) > 50){
-          if(diff > 0){
-            goToSlide(currentIndex + 1);
-          } else {
-            goToSlide(currentIndex - 1);
-          }
+          if(diff > 0) goToSlide(currentIndex + 1);
+          else goToSlide(currentIndex - 1);
         }
         isDragging = false;
-      });
-      
-      carousel.addEventListener('mousedown', (e) => {
-        startX = e.clientX;
-        isDragging = true;
-        carousel.style.cursor = 'grabbing';
-      });
-      
-      carousel.addEventListener('mousemove', (e) => {
-        if(!isDragging) return;
-        currentX = e.clientX;
-      });
-      
-      carousel.addEventListener('mouseup', () => {
-        if(!isDragging) return;
-        const diff = startX - currentX;
-        if(Math.abs(diff) > 50){
-          if(diff > 0){
-            goToSlide(currentIndex + 1);
-          } else {
-            goToSlide(currentIndex - 1);
-          }
-        }
-        isDragging = false;
-        carousel.style.cursor = 'grab';
-      });
-      
-      carousel.addEventListener('mouseleave', () => {
-        isDragging = false;
-        carousel.style.cursor = 'grab';
       });
     }
 
@@ -691,7 +645,6 @@
 
     function parseDate(dateStr){
       if(!dateStr) return null;
-      
       dateStr = String(dateStr).trim();
       if(dateStr === '') return null;
       
@@ -1011,7 +964,6 @@
           produk_ids: isBundle ? item.produk_ids : null
         };
         
-        // Tambahkan baserow_id untuk bundle
         if(isBundle && item.baserow_id){
           newCartItem.baserow_id = item.baserow_id;
         }
@@ -1035,17 +987,60 @@
         const item = document.createElement('div');
         item.className = 'cart-item';
         const imgHtml = i.image ? `<img src="${i.image}" alt="${i.name}">` : '<div style="font-size:12px;color:var(--text-muted)">No Image</div>';
+        
+        let maxQty = 999;
+        if(i.isBundle){
+          const bundle = ALL_BUNDLES.find(b => b.id === i.id);
+          if(bundle) maxQty = bundle.bundle_stok;
+        } else {
+          const product = ALL_PRODUCTS.find(p => p.id === i.id);
+          if(product) maxQty = product.stok;
+        }
+        
         item.innerHTML = `
           <div class="cart-item-img">${imgHtml}</div>
           <div class="cart-item-info">
             <div class="cart-item-name">${i.name}${i.isBundle ? ' <span style="font-size:11px;color:#f59e0b">(Paket)</span>' : ''}</div>
-            <div class="cart-item-detail">${i.qty} × ${formatRp(i.price)}</div>
+            <div class="cart-item-detail">${formatRp(i.price)} / ${i.unit}</div>
           </div>
           <div class="cart-item-right">
             <div class="cart-item-price">${formatRp(i.qty*i.price)}</div>
+            <div class="cart-item-qty">
+              <button class="qty-btn qty-minus" data-id="${i.id}" data-bundle="${i.isBundle}">−</button>
+              <div class="qty-display">${i.qty}</div>
+              <button class="qty-btn qty-plus" data-id="${i.id}" data-bundle="${i.isBundle}" data-max="${maxQty}">+</button>
+            </div>
             <div class="cart-remove" data-id="${i.id}" data-bundle="${i.isBundle}">Hapus</div>
           </div>
         `;
+        
+        item.querySelector('.qty-minus').addEventListener('click', ()=>{
+          const cart = loadCart();
+          const cartItem = cart.find(x => x.id === i.id && x.isBundle === i.isBundle);
+          if(cartItem){
+            if(cartItem.qty > 1){
+              cartItem.qty -= 1;
+              saveCart(cart);
+            } else {
+              const newCart = cart.filter(x => !(x.id === i.id && x.isBundle === i.isBundle));
+              saveCart(newCart);
+            }
+          }
+        });
+        
+        item.querySelector('.qty-plus').addEventListener('click', ()=>{
+          const cart = loadCart();
+          const cartItem = cart.find(x => x.id === i.id && x.isBundle === i.isBundle);
+          if(cartItem){
+            if(cartItem.qty < maxQty){
+              cartItem.qty += 1;
+              saveCart(cart);
+            } else {
+              alert(`Maksimal stok: ${maxQty}`);
+            }
+          }
+        });
+        
         item.querySelector('.cart-remove').addEventListener('click', ()=>{
           const cart = loadCart().filter(x=>!(x.id===i.id && x.isBundle===i.isBundle));
           saveCart(cart);
@@ -1227,7 +1222,6 @@
       btn.disabled = true;
 
       try{
-        // Validasi stok untuk semua item
         for(const cartItem of cart){
           if(cartItem.isBundle){
             const bundle = ALL_BUNDLES.find(b => b.id === cartItem.id);
@@ -1238,7 +1232,6 @@
               throw new Error(`Stok paket ${cartItem.name} tidak cukup (tersisa: ${bundle.bundle_stok})`);
             }
             
-            // Validasi stok produk di dalam bundle
             for(let productId of bundle.produk_ids){
               const product = ALL_PRODUCTS.find(p => p.id === productId);
               if(!product){
@@ -1261,7 +1254,6 @@
         
         btn.textContent = '⏳ Mengupdate stok...';
         
-        // Update stok untuk semua item
         const productUpdates = [];
         const bundleUpdates = [];
         
@@ -1274,11 +1266,10 @@
             
             const newBundleStok = bundle.bundle_stok - cartItem.qty;
             bundleUpdates.push({
-              baserow_id: cartItem.baserow_id || bundle.baserow_id, // Gunakan baserow_id dari cart atau bundle
+              baserow_id: cartItem.baserow_id || bundle.baserow_id,
               stok: newBundleStok
             });
             
-            // Update stok produk di dalam bundle
             for(let productId of bundle.produk_ids){
               const product = ALL_PRODUCTS.find(p => p.id === productId);
               if(!product){
@@ -1303,7 +1294,6 @@
           }
         }
         
-        // Batch update product stocks
         if(productUpdates.length > 0){
           const batchRes = await fetch(`${SHEET_API}/batch_update_stok`, {
             method: 'POST',
@@ -1321,10 +1311,7 @@
           }
         }
         
-        // Update bundle stocks
         for(const bundleUpdate of bundleUpdates){
-          console.log('Updating bundle with baserow_id:', bundleUpdate.baserow_id, 'new stok:', bundleUpdate.stok);
-          
           if(!bundleUpdate.baserow_id){
             throw new Error('Bundle tidak memiliki baserow_id untuk update');
           }
@@ -1333,22 +1320,17 @@
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
-              id: bundleUpdate.baserow_id, // Gunakan baserow_id
+              id: bundleUpdate.baserow_id,
               stok: bundleUpdate.stok
             })
           });
           
-          console.log('Bundle update response status:', bundleRes.status);
-          
           if(!bundleRes.ok){
             const errData = await bundleRes.json().catch(() => ({}));
-            console.error('Bundle update error:', errData);
             throw new Error(`Gagal update stok paket: ${errData.message || bundleRes.statusText}`);
           }
           
           const bundleData = await bundleRes.json();
-          console.log('Bundle update result:', bundleData);
-          
           if(!bundleData.success){
             throw new Error(`Gagal update stok paket: ${bundleData.message || 'Unknown error'}`);
           }
@@ -1638,10 +1620,10 @@
           
           const firstProduct = ALL_PRODUCTS.find(x=>x.id===prodIds[0]);
           
-          const bundleData = {
+          return {
             id: 'bundle_' + String(b.bundle_id || b.id),
-            baserow_id: b.id, // ROW ID dari Baserow (untuk update)
-            bundle_id: String(b.bundle_id || b.id), // Bundle ID user-defined
+            baserow_id: b.id,
+            bundle_id: String(b.bundle_id || b.id),
             nama: b.bundle_nama || b.nama || 'Paket Bundle',
             harga_produk_total: Number(b.harga_produk_total || 0),
             harga_bundle: Number(b.harga_bundle || b.harga || 0),
@@ -1657,9 +1639,6 @@
             bundle_promo_aktif: b.bundle_promo_aktif || 'FALSE',
             isBundle: true
           };
-          
-          console.log('Bundle loaded:', bundleData.nama, 'baserow_id:', bundleData.baserow_id);
-          return bundleData;
         }).filter(b => b.harga_bundle > 0);
         
         FILTERED_PRODUCTS = [...ALL_PRODUCTS, ...ALL_BUNDLES];
